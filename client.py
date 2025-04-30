@@ -21,7 +21,7 @@ class Client:
     # The main loop
     def main(self):
         self.connect()
-        self.submit_username()
+        self.send_username()
         self.update_render()
 
 
@@ -40,7 +40,7 @@ class Client:
 
 
     # Sends a username upon first join
-    def submit_username(self):
+    def send_username(self):
         username = input("Enter your username: ").strip()
         self.username = username
 
@@ -52,15 +52,10 @@ class Client:
             self.log_message("INFO", f"Connection closed")
 
 
-    # Receives the initial game state
-    def receive_initial_game_state(self):
-        self.receive_dimensions()
-
-
     # Initial paint of the window
     def init_render(self, dimensions):
-        self.render = GameRender(self.username, dimensions)
-        self.render.main() 
+        self.render = GameRender(self.username, dimensions, self.client)
+        threading.Thread(target=self.render.capture_keypress, daemon=True).start()
 
 
     # Redraws the game window based on the new state
@@ -82,9 +77,11 @@ class Client:
                     if self.render == None:
                         self.init_render(game_state['dimensions'])
 
-                    status_code = self.render.update_game_state(game_state)
-                    if status_code == -1:
-                        raise Exception("Render failed - probably went off screen")
+                    if self.username not in game_state['players'] or not game_state['players'][self.username]['is_alive']:
+                        self.log_message("INFO", f"update_render: Game over")
+                        break
+
+                    self.render.update_game_state(game_state)
 
         except Exception as e:
             self.log_message("ERROR", f"update_render: {e}")

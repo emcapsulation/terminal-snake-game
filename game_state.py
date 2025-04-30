@@ -1,104 +1,103 @@
+import json
 import random
 
+from player import Player
+
 class GameState:
+	DIRECTION_MAP = {
+		ord("w"): [-1, 0],
+		ord("a"): [0, -1],
+		ord("s"): [1, 0],
+		ord("d"): [0, 1]
+	}
+
+
 	def __init__(self, dimensions):
 		self.dimensions = dimensions
+		self.food_pos = self.get_random_position()
+		self.players = {}
 
-		self.game_state = {
-			'dimensions': self.dimensions,
-			'food_pos': [random.randint(1, self.dimensions[0]-2), random.randint(1, self.dimensions[1]-2)],
-			'players': {}
-		}
 
-		self.dirs = {
-			ord("w"): [-1, 0],
-			ord("a"): [0, -1],
-			ord("s"): [1, 0],
-			ord("d"): [0, 1]
-		}
+	# Converts the object to JSON so it can be sent to the client
+	def to_json(self):
+		return json.dumps({
+			"dimensions": self.dimensions,
+			"food_pos": self.food_pos,
+			"players": {username: player.to_dict() for username, player in self.players.items()}
+		})
 
 
 	# Adds a new player to the map
 	def add_player(self, username):
-		player = {
-			'segments': [[random.randint(1, self.dimensions[0]-2), random.randint(1, self.dimensions[1]-2)]],
-			'score': 0,
-			'direction': self.dirs[ord(random.choice(["w", "a", "s", "d"]))]
-		}
+		start_segment = [self.get_random_position()]
+		random_direction = GameState.DIRECTION_MAP[ord(random.choice(["w", "a", "s", "d"]))]
+		player = Player(start_segment, random_direction)
 
-		self.game_state['players'][username] = player
+		self.players[username] = player
+
+
+	# Gets a random position
+	def get_random_position(self):
+		return [random.randint(1, self.dimensions[0]-2), random.randint(1, self.dimensions[1]-2)]
 
 
 	# Removes a player from the map
 	def remove_player(self, username):
-		self.game_state['players'].pop(username)
+		self.players.pop(username)
 
 
 	# Where everything gets updated
 	def update_state(self):
-		dead_snakes = self.move_snakes()
+		self.update_snakes()
 		# self.sort_leaderboard()
-
-		return dead_snakes
 
 
 	# Gets the segments from all snakes
-	def get_all_segments(self):
-		all_segments = []
+	def get_occupied_positions(self):
+		occupied_positions = []
 
-		for user, snake in self.game_state['players'].items():
-			all_segments.extend(snake)
+		for player in self.players.values():
+			occupied_positions.extend(player.segments)
 
-		return all_segments
-
-
-	# Checks if the snake has died
-	def snake_alive(self, all_segments, head):
-		if head in all_segments or head[0] in [0, self.dimensions[0]-1] or head[1] in [0, self.dimensions[1]-1]:
-			return False
-		return True
+		return occupied_positions
 
 
 	# Regenerates the food if a snake ate it
-	def regenerate_food(self, food_eaten_by, all_segments):
-		if food_eaten_by != None:
-			self.game_state['food_pos'] = [random.randint(1, self.dimensions[0]-2), random.randint(1, self.dimensions[1]-2)]
-			while self.game_state['food_pos'] in all_segments:
-				self.game_state['food_pos'] = [random.randint(1, self.dimensions[0]-2), random.randint(1, self.dimensions[1]-2)]
+	def regenerate_food(self, eater, occupied_positions):
+		if eater is not None:
+			self.food_pos = self.get_random_position()
+			while self.food_pos in occupied_positions:
+				self.food_pos = self.get_random_position()
 			
-			self.game_state['players'][food_eaten_by]['score'] += 1
+			self.players[eater].score += 1
 
 
 	# Moves all snakes one step
-	def move_snakes(self):
-		dead_snakes = []
-		all_segments = self.get_all_segments()
+	def update_snakes(self):
+		occupied_positions = self.get_occupied_positions()
 
-		food_eaten_by = None
-		for user, snake in self.game_state['players'].items():
+		eater = None
+		for username, player in self.players.items():
 			# Add the new head
-			head = [snake['segments'][0][0]+snake['direction'][0], snake['segments'][0][1]+snake['direction'][1]]
+			player.add_new_head()
 			
-			# Check if he survived the move
-			alive = self.snake_alive(all_segments, head)
-			if not alive:
-				dead_snakes.append(user)
+			# Update whether he survived the move
+			player.update_is_alive(occupied_positions, self.dimensions)
+			if not player.is_alive:
 				continue
 
-			snake['segments'].insert(0, head)
-
 			# Check if he ate food
-			if head != self.game_state['food_pos']: 
-				snake['segments'].pop()
-			else: 
-				food_eaten_by = user
+			if player.get_head() != self.food_pos: 
+				player.pop_tail()
+			else:
+				eater = username
 
 		# Snake got the food		
-		self.regenerate_food(food_eaten_by, all_segments)
-
-		# Return the list of dead snakes
-		return dead_snakes
+		self.regenerate_food(eater, occupied_positions)
 
 
-	# # Sorts all the snakes based on scores
-	# def 
+	# Updates the player's direction
+	def update_player_direction(self, username, direction):
+		if username in self.players:
+			player = self.players[username]
+			player.direction = GameState.DIRECTION_MAP[ord(direction)]

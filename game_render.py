@@ -1,20 +1,28 @@
 import curses
+import json
 
 class GameRender:
-	def __init__(self, username, dimensions):
+	def __init__(self, username, dimensions, client_socket):
 		self.username = username
 		self.dimensions = dimensions
+		self.client_socket = client_socket
+
+		self.stdscr = curses.initscr()
 		self.game_state = None
+
+		self.create_game_window()
 
 
 	# Creates the game window
-	def main(self):
-		self.stdscr = curses.initscr()
+	def create_game_window(self):			
+		curses.curs_set(0)	
 		curses.noecho()
+		self.stdscr.clear()
 		self.stdscr.timeout(75)
 
 		self.height, self.width = self.dimensions
 		self.win = curses.newwin(self.height, self.width, 0, 0)
+		self.win.clear()
 		self.win.border()	
 
 
@@ -32,11 +40,9 @@ class GameRender:
 				self.initial_draw()	
 			else:
 				self.redraw(new_state)
-			return 0
 
 		except Exception:
 			self.cleanup()
-			return -1
 
 
 	# Draws an entire snake to the screen
@@ -102,3 +108,17 @@ class GameRender:
 
 		self.win.refresh()
 		self.game_state = new_state
+
+
+	def capture_keypress(self):
+	    try:
+	        while True:
+	            key = self.stdscr.getch()
+
+	            if key == ord("w") or key == ord("a") or key == ord("s") or key == ord("d"):
+	                message = json.dumps({'direction': chr(key)})
+	                self.client_socket.sendall(message.encode())
+
+	    except Exception as e:
+	        print(f"ERROR in capture_keypress: {e}")
+	        self.cleanup()

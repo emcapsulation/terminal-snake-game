@@ -2,6 +2,9 @@ import socket
 import threading
 import json
 import time
+import queue
+
+from connection import Connection
 from game_state import GameState
 
 class Server:
@@ -11,14 +14,15 @@ class Server:
 		self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 		self.state = GameState([20, 50])
-		self.connections = {}
+		self.connections = []
+		self.message_queue = queue.Queue()
 
 		self.lock = threading.Lock()
 
 
 	# Logs a message
 	def log_message(self, type, message):
-		print(f"{type.ljust(7, ' ')} | {message}")
+		print(f"{type.ljust(7, ' ')} | {'Server'.ljust(7, ' ')} | {message}")
 
 
 	# Starts the server
@@ -30,90 +34,81 @@ class Server:
 		# Main game loop updates
 		threading.Thread(target=self.broadcast_loop, daemon=True).start()
 
+		# Process messages from connections
+		threading.Thread(target=self.process_messages, daemon=True).start()
+
 		while True:
 			client_socket, client_address = self.server.accept()
-			self.log_message("INFO", f"New client connected: {client_address}")						
+			new_conn = Connection(client_socket, client_address, self.message_queue)			
+			self.log_message("INFO", f"New client connected: {new_conn.address}")			
 
-			client_thread = threading.Thread(target=self.handle, args=(client_socket, client_address), daemon=True)
+			# Get the initial username for the new connection
+			new_conn.receive_username()
+
+			# Add to the pool of connections
+			with self.lock:
+				self.connections.append(new_conn)
+				self.log_message("INFO", f"List of connections: {[conn.address for conn in self.connections]} ")
+
+			# Add the player to the game state
+			self.add_player_to_game(new_conn)
+
+			client_thread = threading.Thread(target=new_conn.handle, daemon=True)
 			client_thread.start()
 
 
-	# Receives a new client's username
-	def receive_username(self, client_socket, client_address):
-		try:
-			username = client_socket.recv(1024).decode().strip()	
-			self.log_message("INFO", f"Received username from {client_address}: {username}")
-			self.add_player(client_socket, client_address, username)
-			return username
-		except Exception as e:
-			self.log_message("ERROR", f"receive_username: {e}")
-			self.remove_player(username)	
+	# Loops through queue and processes messages
+	def process_messages(self):
+		while True:
+			connection, message = self.message_queue.get()
 
+			if 'direction' in message:
+				self.state.update_player_direction(connection.username, message['direction'])
+				self.log_message("INFO", f"Updated direction of {connection.username} to {message['direction']}")
+			elif 'remove_connection' in message:
+				self.remove_player(message['remove_connection'])	
 
-	# Handles an incoming client
-	def handle(self, client_socket, client_address):
-		username = self.receive_username(client_socket, client_address)
-
-		try:
-			while True:			
-				data = client_socket.recv(1024)	
-				if not data:
-					break
-		except Exception as e:
-			self.log_message("ERROR", f"handle: {e}")
-		finally:
-			self.remove_player(username)
+			self.log_message("INFO", f"Processed message: {connection.username} - {message}")
 
 
 	# Sends a message to all clients
 	def broadcast(self, message):
-		message_bytes = json.dumps(message).encode() + b"\n"
-		for user in self.connections:
-			client_socket = self.connections[user]['client_socket']
+		message_bytes = message.encode() + b"\n"
+
+		for connection in self.connections:
 			try:
-				client_socket.sendall(message_bytes)
-				self.log_message("INFO", f"Message broadcasted: {message}")
+				connection.socket.sendall(message_bytes)
 			except Exception as e:
 				self.log_message("ERROR", f"broadcast: {e}")
-				self.remove_player(user)			
+				self.remove_player(connection)	
+			else:
+				self.log_message("INFO", f"Message broadcasted: {message}")		
 
 
-	# The main game update loop
+	# Updates everyone's states and sends out the new state
 	def broadcast_loop(self):
 		while True:
-			dead_snakes = []
-
 			with self.lock:
-				dead_snakes = self.state.update_state()
-				self.broadcast(self.state.game_state)
-
-			for user in dead_snakes:
-				self.remove_player(user)
-
+				self.state.update_state()
+				self.broadcast(self.state.to_json())
 			time.sleep(0.075)
 
 
 	# Adds a player to the game by username
-	def add_player(self, client_socket, client_address, username):
+	def add_player_to_game(self, connection):
 		with self.lock:
-			self.connections[username] = {'client_socket': client_socket, 'client_address': client_address}
-			self.state.add_player(username)
-
-			self.log_message("INFO", f"Player added {client_address}: {username}")
-			self.log_message("INFO", f"Connections: {self.connections}")
+			self.state.add_player(connection.username)
+			self.log_message("INFO", f"{connection.address} {connection.username}: Player added to game")
 
 
 	# Removes a player from the game state and connections list
-	def remove_player(self, user):
+	def remove_player(self, connection):
 		with self.lock:
-			self.state.remove_player(user)
-			self.log_message("INFO", f"Player removed: {user}")
+			self.state.remove_player(connection.username)
+			self.log_message("INFO", f"{connection.address} {connection.username}: Player removed from game")
 
-			self.connections[user]['client_socket'].close()
-			self.log_message("INFO", f"Connection closed: {user}")
-
-			self.connections.pop(user)			
-			self.log_message("INFO", f"Players: {self.connections}")			
+			self.connections.remove(connection)			
+			self.log_message("INFO", f"List of connections: {[conn.address for conn in self.connections]} ")		
 	
 
 if __name__ == "__main__":
