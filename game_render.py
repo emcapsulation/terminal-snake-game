@@ -120,5 +120,4 @@ class GameRender:
 	                self.client_socket.sendall(message.encode())
 
 	    except Exception as e:
-	        print(f"ERROR in capture_keypress: {e}")
 	        self.cleanup()

@@ -1,11 +1,13 @@
-import socket
-import threading
 import json
-import time
+import socket
 import queue
+import threading
+import time
 
 from connection import Connection
 from game_state import GameState
+from logging_utils import get_logger, log_message
+
 
 class Server:
 	def __init__(self, host, port):
@@ -18,11 +20,11 @@ class Server:
 		self.message_queue = queue.Queue()
 
 		self.lock = threading.Lock()
+		self.logger = get_logger(__name__)
 
 
-	# Logs a message
 	def log_message(self, type, message):
-		print(f"{type.ljust(7, ' ')} | {'Server'.ljust(7, ' ')} | {message}")
+		log_message(self.logger, type, "Server", message)
 
 
 	# Starts the server
@@ -62,13 +64,12 @@ class Server:
 		while True:
 			connection, message = self.message_queue.get()
 
+			self.log_message("INFO", f"Next message: {connection.username} - {message}")
 			if 'direction' in message:
 				self.state.update_player_direction(connection.username, message['direction'])
 				self.log_message("INFO", f"Updated direction of {connection.username} to {message['direction']}")
 			elif 'remove_connection' in message:
 				self.remove_player(message['remove_connection'])	
-
-			self.log_message("INFO", f"Processed message: {connection.username} - {message}")
 
 
 	# Sends a message to all clients
@@ -80,9 +81,7 @@ class Server:
 				connection.socket.sendall(message_bytes)
 			except Exception as e:
 				self.log_message("ERROR", f"broadcast: {e}")
-				self.remove_player(connection)	
-			else:
-				self.log_message("INFO", f"Message broadcasted: {message}")		
+				self.remove_player(connection)
 
 
 	# Updates everyone's states and sends out the new state
@@ -98,7 +97,7 @@ class Server:
 	def add_player_to_game(self, connection):
 		with self.lock:
 			self.state.add_player(connection.username)
-			self.log_message("INFO", f"{connection.address} {connection.username}: Player added to game")
+			self.log_message("INFO", f"{connection.address} {connection.username}: Player added to game")			
 
 
 	# Removes a player from the game state and connections list
@@ -109,7 +108,7 @@ class Server:
 
 			self.connections.remove(connection)			
 			self.log_message("INFO", f"List of connections: {[conn.address for conn in self.connections]} ")		
-	
+
 
 if __name__ == "__main__":
 	host = socket.gethostbyname(socket.gethostname())

@@ -13,11 +13,6 @@ class Client:
         self.render = None
 
 
-    # Logs a message
-    def log_message(self, type, message):
-        print(f"{type.ljust(7, ' ')} | {message}")
-
-
     # The main loop
     def main(self):
         self.connect()
@@ -28,7 +23,6 @@ class Client:
     # Connect to server
     def connect(self):               
         self.client.connect((self.host, self.port))
-        self.log_message("INFO", f"Connected to server at {self.host}:{self.port}")
 
 
     # Closes connection and cleans up render
@@ -36,7 +30,6 @@ class Client:
         if self.render != None:
             self.render.cleanup()
         self.client.close()
-        self.log_message("INFO", f"Connection closed")
 
 
     # Sends a username upon first join
@@ -47,9 +40,7 @@ class Client:
         try:
             self.client.sendall(self.username.encode())
         except Exception as e:
-            self.log_message("ERROR", f"submit_username: {e}")
             self.client.close()
-            self.log_message("INFO", f"Connection closed")
 
 
     # Initial paint of the window
@@ -78,13 +69,12 @@ class Client:
                         self.init_render(game_state['dimensions'])
 
                     if self.username not in game_state['players'] or not game_state['players'][self.username]['is_alive']:
-                        self.log_message("INFO", f"update_render: Game over")
                         break
 
                     self.render.update_game_state(game_state)
 
         except Exception as e:
-            self.log_message("ERROR", f"update_render: {e}")
+            pass
 
         finally:
             self.close()         

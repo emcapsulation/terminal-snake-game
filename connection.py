@@ -1,16 +1,19 @@
 import json
 
+from logging_utils import get_logger, log_message
+
 class Connection:
 	def __init__(self, socket, address, message_queue):
 		self.socket = socket
 		self.address = address
 		self.message_queue = message_queue
 		self.username = None
+		self.logger = get_logger(__name__)
 
 
 	# Logs a message
 	def log_message(self, type, message):
-		print(f"{type.ljust(7, ' ')} | {self.address} {self.username} | {message}")
+		log_message(self.logger, type, self.username, f"{self.address} message")
 
 
 	# Basic handler - listens for messages
@@ -26,7 +29,8 @@ class Connection:
 				for message in messages:
 					msg = self.parse_message(message)
 					if msg != None:
-						self.message_queue.put((self, msg))				
+						self.message_queue.put((self, msg))	
+						self.log_message("INFO", f"Message added to queue: {msg}")			
 
 		except Exception as e:
 			self.log_message("ERROR", f"handle: {e}")
