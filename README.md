@@ -1,7 +1,7 @@
 # Singleplayer Terminal Snake Game
 
 ## Description
-This repo contains the code for a terminal snake game in under 50 lines of Python! It was written using the curses library. 
+The single-player directory contains the code for a terminal snake game in under 50 lines of Python. It was written using the curses library. 
 
 I made a video about it on my YouTube channel: https://www.youtube.com/watch?v=ado_xHizvMc
 
@@ -12,12 +12,23 @@ pip install windows-curses
 ```
 Run the game.
 ```
+cd single-player
 python3 snake-game.py
 ```
 
 # Multiplayer Terminal Snake Game
 
 ## Description
-I then made the snake game multiplayer.
+The multi-player directory contains the code for a multiplayer snake game using sockets. 
 
 ## Running the Code
+Running the server:
+```
+cd multi-player
+python3 server.py
+```
+Running the client:
+```
+cd multi-player
+python3 client.py
+```

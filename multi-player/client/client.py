@@ -1,7 +1,7 @@
 import socket
 import json
 import threading
-from game_render import GameRender
+from render import Render
 
 class Client:
     def __init__(self, host, port):
@@ -38,14 +38,14 @@ class Client:
         self.username = username
 
         try:
-            self.client.sendall(self.username.encode())
+            self.client.sendall(json.dumps({'username': self.username}).encode())
         except Exception as e:
             self.client.close()
 
 
     # Initial paint of the window
     def init_render(self, dimensions):
-        self.render = GameRender(self.username, dimensions, self.client)
+        self.render = Render(self.username, dimensions, self.client)
         threading.Thread(target=self.render.capture_keypress, daemon=True).start()
 
 

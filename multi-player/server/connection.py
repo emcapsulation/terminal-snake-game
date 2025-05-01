@@ -13,11 +13,20 @@ class Connection:
 
 	# Logs a message
 	def log_message(self, type, message):
-		log_message(self.logger, type, self.username, f"{self.address} message")
+		log_message(self.logger, type, str(self.username), f"{self.address}: {message}")
+
+
+	# Adds a message to the queue
+	def add_to_queue(self, message):
+		self.message_queue.put((self, message))	
+		self.log_message("INFO", f"Message added to queue: {message}")		
 
 
 	# Basic handler - listens for messages
 	def handle(self):
+		# Get the initial username for the new connection
+		self.receive_username()
+
 		try:
 			while True:
 				data = self.socket.recv(1024)
@@ -29,8 +38,7 @@ class Connection:
 				for message in messages:
 					msg = self.parse_message(message)
 					if msg != None:
-						self.message_queue.put((self, msg))	
-						self.log_message("INFO", f"Message added to queue: {msg}")			
+						self.add_to_queue(msg)
 
 		except Exception as e:
 			self.log_message("ERROR", f"handle: {e}")
@@ -38,7 +46,7 @@ class Connection:
 		finally:
 			self.socket.close()
 			self.log_message("INFO", f"Connection closed")
-			self.message_queue.put((self, {"remove_connection": self}))
+			self.add_to_queue({"remove_connection": self})
 
 
 	# Parses a message - it should be in JSON format
@@ -55,8 +63,13 @@ class Connection:
 	# Receives the username
 	def receive_username(self):
 		try:
-			self.username = self.socket.recv(1024).decode().strip()
-			self.log_message("INFO", f"Received username")
+			username = self.socket.recv(1024).decode().strip()
+			self.log_message("INFO", f"Received username {username}")
+
+			username_json = self.parse_message(username)
+			self.username = username_json['username']
+			self.add_to_queue({'username': self.username})
+
 		except Exception as e:
 			self.log_message("ERROR", f"receive_username: {e}")	
 

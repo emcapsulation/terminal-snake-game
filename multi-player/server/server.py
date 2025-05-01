@@ -5,8 +5,11 @@ import threading
 import time
 
 from connection import Connection
-from game_state import GameState
+from state import State
 from logging_utils import get_logger, log_message
+
+
+# TODO: Bug if user doesnt enter username close connection
 
 
 class Server:
@@ -15,7 +18,7 @@ class Server:
 		self.port = port
 		self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-		self.state = GameState([20, 50])
+		self.state = State([25, 60])
 		self.connections = []
 		self.message_queue = queue.Queue()
 
@@ -42,18 +45,7 @@ class Server:
 		while True:
 			client_socket, client_address = self.server.accept()
 			new_conn = Connection(client_socket, client_address, self.message_queue)			
-			self.log_message("INFO", f"New client connected: {new_conn.address}")			
-
-			# Get the initial username for the new connection
-			new_conn.receive_username()
-
-			# Add to the pool of connections
-			with self.lock:
-				self.connections.append(new_conn)
-				self.log_message("INFO", f"List of connections: {[conn.address for conn in self.connections]} ")
-
-			# Add the player to the game state
-			self.add_player_to_game(new_conn)
+			self.log_message("INFO", f"New client connected: {new_conn.address}")
 
 			client_thread = threading.Thread(target=new_conn.handle, daemon=True)
 			client_thread.start()
@@ -63,12 +55,19 @@ class Server:
 	def process_messages(self):
 		while True:
 			connection, message = self.message_queue.get()
-
 			self.log_message("INFO", f"Next message: {connection.username} - {message}")
-			if 'direction' in message:
+
+			if 'username' in message:
+				# Add the player to the game state and connection pool
+				self.add_player(connection)
+
+			elif 'direction' in message:
+				# Update player direction
 				self.state.update_player_direction(connection.username, message['direction'])
 				self.log_message("INFO", f"Updated direction of {connection.username} to {message['direction']}")
+
 			elif 'remove_connection' in message:
+				# Remove client
 				self.remove_player(message['remove_connection'])	
 
 
@@ -93,11 +92,14 @@ class Server:
 			time.sleep(0.075)
 
 
-	# Adds a player to the game by username
-	def add_player_to_game(self, connection):
+	# Adds a player to the game by username, add to connection pool
+	def add_player(self, connection):
 		with self.lock:
 			self.state.add_player(connection.username)
-			self.log_message("INFO", f"{connection.address} {connection.username}: Player added to game")			
+			self.log_message("INFO", f"{connection.address} {connection.username}: Player added to game")	
+
+			self.connections.append(connection)
+			self.log_message("INFO", f"List of connections: {[conn.address for conn in self.connections]} ")		
 
 
 	# Removes a player from the game state and connections list

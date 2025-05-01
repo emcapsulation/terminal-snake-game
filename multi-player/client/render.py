@@ -1,7 +1,7 @@
 import curses
 import json
 
-class GameRender:
+class Render:
 	def __init__(self, username, dimensions, client_socket):
 		self.username = username
 		self.dimensions = dimensions

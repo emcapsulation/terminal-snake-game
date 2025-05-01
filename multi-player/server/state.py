@@ -4,7 +4,7 @@ import random
 from logging_utils import get_logger, log_message
 from player import Player
 
-class GameState:
+class State:
 	DIRECTION_MAP = {
 		ord("w"): [-1, 0],
 		ord("a"): [0, -1],
@@ -22,7 +22,7 @@ class GameState:
 
 	# Logs a message
 	def log_message(self, type, message):
-		log_message(self.logger, type, f"GameState", message)
+		log_message(self.logger, type, f"State", message)
 
 
 	# Converts the object to JSON so it can be sent to the client
@@ -35,14 +35,13 @@ class GameState:
 
 
 	# Adds a new player to the map
-	def add_player(self, username):
-		self.log_message("INFO", f"Player {username}: Adding to list of players")
-
+	def add_player(self, username):	
 		start_segment = [self.get_random_position()]
-		random_direction = GameState.DIRECTION_MAP[ord(random.choice(["w", "a", "s", "d"]))]
+		random_direction = State.DIRECTION_MAP[ord(random.choice(["w", "a", "s", "d"]))]
 		player = Player(start_segment, random_direction)
 
-		self.players[username] = player		
+		self.players[username] = player	
+		self.log_message("INFO", f"Player {username}: Added to list of players")	
 
 
 	# Gets a random position
@@ -113,7 +112,7 @@ class GameState:
 		if username in self.players:
 			player = self.players[username]			
 
-			new_dir = GameState.DIRECTION_MAP[ord(key)]
+			new_dir = State.DIRECTION_MAP[ord(key)]
 			if [new_dir[0]+player.direction[0], new_dir[1]+player.direction[1]] != [0, 0]:
 				player.direction = new_dir
 				self.log_message("INFO", f"Player {username}: Direction updated to {key}")

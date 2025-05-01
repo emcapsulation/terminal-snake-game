@@ -37,13 +37,19 @@ class Player:
 		self.segments.pop()
 
 
+	# Kills the snake and performs cleanup
+	def kill_snake(self):
+		self.is_alive = False
+		self.segments = []
+
+
 	# Updates whether the snake is alive by checking for collision with a wall or another snake
 	def update_is_alive(self, occupied_positions, dimensions):
 		# Collide with another snake
 		if self.get_head() in occupied_positions:
-			self.is_alive = False
+			self.kill_snake()
 
 		# Collide with wall
 		if self.get_head(0) in [0, dimensions[0]-1] or self.get_head(1) in [0, dimensions[1]-1]:
-			self.is_alive = False
+			self.kill_snake()
 
