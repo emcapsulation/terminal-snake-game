@@ -7,7 +7,7 @@ class Render:
 		self.dimensions = dimensions
 		self.client_socket = client_socket
 
-		self.stdscr = curses.initscr()
+		self.stdscr = curses.initscr()	
 		self.game_state = None
 
 		self.create_game_window()
@@ -17,13 +17,19 @@ class Render:
 	def create_game_window(self):			
 		curses.curs_set(0)	
 		curses.noecho()
+
 		self.stdscr.clear()
+		self.stdscr.refresh()
 		self.stdscr.timeout(75)
 
 		self.height, self.width = self.dimensions
 		self.win = curses.newwin(self.height, self.width, 0, 0)
-		self.win.clear()
 		self.win.border()	
+		self.win.refresh()
+
+		self.leaderboard_win = curses.newwin(self.height, 15, 0, self.width+1)
+		self.leaderboard_win.border()			
+		self.leaderboard_win.refresh()
 
 
 	# Cleans everything
@@ -56,6 +62,14 @@ class Render:
 		self.win.addstr(self.height-1, self.width-12, f"Score: {score}")
 
 
+	# Draws the leaderboard
+	def draw_leaderboard(self, players):
+		i = 2
+		for username, snake in players.items():
+			self.leaderboard_win.addstr(i, 1, f"{username} {snake['score']}")
+			i += 1
+
+
 	# Draws the food to the screen
 	def draw_food(self, food_pos):
 		self.win.addch(*food_pos, '@')
@@ -69,7 +83,10 @@ class Render:
 			self.draw_snake(snake['segments'])
 
 		self.draw_score(self.game_state['players'][self.username]['score'])
+		self.draw_leaderboard(self.game_state['players'])
+
 		self.win.refresh()
+		self.leaderboard_win.refresh()
 	
 
 	# Includes optimisations rather than redrawing everything
@@ -106,7 +123,10 @@ class Render:
 		if new_score != cur_score:
 			self.draw_score(new_score)
 
+		self.draw_leaderboard(new_state['players'])
+
 		self.win.refresh()
+		self.leaderboard_win.refresh()
 		self.game_state = new_state
 
 

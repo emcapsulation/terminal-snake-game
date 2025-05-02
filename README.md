@@ -24,11 +24,11 @@ The multi-player directory contains the code for a multiplayer snake game using 
 ## Running the Code
 Running the server:
 ```
-cd multi-player
+cd multi-player/server
 python3 server.py
 ```
 Running the client:
 ```
-cd multi-player
+cd multi-player/client
 python3 client.py
 ```

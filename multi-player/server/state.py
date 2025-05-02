@@ -58,7 +58,7 @@ class State:
 	# Where everything gets updated
 	def update_state(self):
 		self.update_snakes()
-		# self.sort_leaderboard()
+		self.sort_leaderboard()
 
 
 	# Gets the segments from all snakes
@@ -105,6 +105,11 @@ class State:
 
 		# Snake got the food		
 		self.regenerate_food(eater, occupied_positions)
+
+
+	# Sorts the players based on score
+	def sort_leaderboard(self):
+		self.players = dict(sorted(self.players.items(), key=lambda player: player[1].score))
 
 
 	# Updates the player's direction

@@ -58,13 +58,15 @@ class Server:
 			self.log_message("INFO", f"Next message: {connection.username} - {message}")
 
 			if 'username' in message:
+				# TODO: Username uniqueness check
 				# Add the player to the game state and connection pool
 				self.add_player(connection)
 
 			elif 'direction' in message:
 				# Update player direction
-				self.state.update_player_direction(connection.username, message['direction'])
-				self.log_message("INFO", f"Updated direction of {connection.username} to {message['direction']}")
+				with self.lock:
+					self.state.update_player_direction(connection.username, message['direction'])
+					self.log_message("INFO", f"Updated direction of {connection.username} to {message['direction']}")
 
 			elif 'remove_connection' in message:
 				# Remove client
