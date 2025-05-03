@@ -4,95 +4,104 @@ import threading
 from render import Render
 
 class Client:
-    def __init__(self, host, port):
-        self.host = host
-        self.port = port
-        self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	def __init__(self, host, port):
+		self.host = host
+		self.port = port
+		self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        self.username = ""
-        self.render = None
-
-
-    # The main loop
-    def main(self):
-        self.connect()
-        self.send_username()
-        self.receive_username()
-        self.update_render()
+		self.username = ""
+		self.render = None
 
 
-    # Connect to server
-    def connect(self):               
-        self.client.connect((self.host, self.port))
+	# The main loop
+	def main(self):
+		connected = self.connect()
+
+		if connected:
+			self.send_username()
+			self.receive_username()
+			self.update_render()
 
 
-    # Closes connection and cleans up render
-    def close(self):
-        if self.render is not None:
-            self.render.cleanup()
-        self.client.close()
+	# Connect to server
+	def connect(self):   
+		try:            
+			self.client.connect((self.host, self.port))
+		except Exception as e:
+			print(f"ERROR - Could not connect to server: {self.host}:{self.port}")
+			self.close()
+			return False
+		else:
+			return True
 
 
-    # Sends a username upon first join
-    def send_username(self):
-        username = input("Enter your username: ").strip()
-        try:
-            self.client.sendall(json.dumps({'username': username}).encode())
-        except Exception as e:
-            self.close()
+	# Closes connection and cleans up render
+	def close(self):
+		if self.render is not None:
+			self.render.cleanup()
+		self.client.close()
 
 
-    # Receives the username back from the server
-    def receive_username(self):
-        username = self.client.recv(1024).decode().strip()
-        if not username:
-            self.close()
-        else:
-            self.username = username
+	# Sends a username upon first join
+	def send_username(self):
+		username = input("Enter your username: ").strip()
+		try:
+			self.client.sendall(json.dumps({'username': username}).encode())
+		except Exception as e:
+			self.close()
 
 
-    # Initial paint of the window
-    def init_render(self, dimensions):
-        self.render = Render(self.username, dimensions, self.client)
-        threading.Thread(target=self.render.capture_keypress, daemon=True).start()
+	# Receives the username back from the server
+	def receive_username(self):
+		username = self.client.recv(1024).decode().strip()
+		if not username:
+			self.close()
+		else:
+			self.username = username
 
 
-    # Redraws the game window based on the new state
-    def update_render(self):        
-        try:
-            buffer = ""
-            running = True
-            while running:
-                data = self.client.recv(4096).decode()
-                if not data:
-                    break
+	# Initial paint of the window
+	def init_render(self, dimensions):
+		self.render = Render(self.username, dimensions, self.client)
+		threading.Thread(target=self.render.capture_keypress, daemon=True).start()
 
-                buffer += data
 
-                while "\n" in buffer:
-                    line, buffer = buffer.split("\n", 1)
-                    state = json.loads(line)
+	# Redraws the game window based on the new state
+	def update_render(self):        
+		try:
+			buffer = ""
+			running = True
+			while running:
+				data = self.client.recv(4096).decode()
+				if not data:
+					break
 
-                    # Initial paint
-                    if self.render == None:
-                        self.init_render(state['dimensions'])
+				buffer += data
 
-                    if self.username not in state['players'] or not state['players'][self.username]['is_alive']:
-                        running = False
-                        break
+				while "\n" in buffer:
+					line, buffer = buffer.split("\n", 1)
+					state = json.loads(line)
 
-                    self.render.update_state(state)
+					# Initial paint
+					if self.render == None:
+						self.init_render(state['dimensions'])
 
-        except Exception as e:
-            pass
+					if self.username not in state['players'] or not state['players'][self.username]['is_alive']:
+						running = False
+						break
 
-        finally:
-            self.close()         
+					self.render.update_state(state)
+
+		except Exception as e:
+			pass
+
+		finally:
+			self.close()         
 
 
 if __name__ == "__main__":
-    server_ip = socket.gethostbyname(socket.gethostname())
-    port = 5050
+	server_ip = input("Enter the server IP address: ")
+	port = 5050
 
-    client = Client(server_ip, port)
-    client.main()
+	client = Client(server_ip, port)
+	client.main()

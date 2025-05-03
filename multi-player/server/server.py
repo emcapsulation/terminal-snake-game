@@ -46,6 +46,7 @@ class Server:
 		self.server.bind((self.host, self.port))
 		self.server.listen()
 		self.log_message("INFO", f"Server running on {self.host}:{self.port}")
+		self.log_message("INFO", f"Local server IP: {socket.gethostbyname(socket.gethostname())}")
 
 		# Main game loop updates
 		threading.Thread(target=self.broadcast_loop, daemon=True).start()
@@ -135,13 +136,15 @@ class Server:
 
 
 if __name__ == "__main__":
-	host = socket.gethostbyname(socket.gethostname())
+	host = "0.0.0.0"
 	port = 5050
 
 	server = Server(host, port)
 
 	try:
 		server.start()
+	except KeyboardInterrupt:
+		server.log_message("INFO", f"Keyboard interrupt, quitting server")
 	except Exception as e:
 		server.log_message("CRITICAL", f"Fatal server error: {e}")
 	finally:
