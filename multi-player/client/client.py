@@ -17,6 +17,7 @@ class Client:
     def main(self):
         self.connect()
         self.send_username()
+        self.receive_username()
         self.update_render()
 
 
@@ -35,12 +36,19 @@ class Client:
     # Sends a username upon first join
     def send_username(self):
         username = input("Enter your username: ").strip()
-        self.username = username
-
         try:
-            self.client.sendall(json.dumps({'username': self.username}).encode())
+            self.client.sendall(json.dumps({'username': username}).encode())
         except Exception as e:
-            self.client.close()
+            self.close()
+
+
+    # Receives the username back from the server
+    def receive_username(self):
+        username = self.client.recv(1024).decode().strip()
+        if not username:
+            self.close()
+        else:
+            self.username = username
 
 
     # Initial paint of the window

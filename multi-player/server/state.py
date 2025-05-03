@@ -34,14 +34,27 @@ class State:
 		})
 
 
+	# Appends a number until the username is unique
+	def get_unique_username(self, username):
+		suffix, counter = "", 1
+		while username+suffix in self.players:
+			suffix = str(counter)
+			counter += 1
+		return username+suffix
+
+
 	# Adds a new player to the map
 	def add_player(self, username):
+		unique_username = self.get_unique_username(username)
+
 		start_segment = [self.get_random_position()]
 		random_direction = State.DIRECTION_MAP[ord(random.choice(["w", "a", "s", "d"]))]
 		player = Player(start_segment, random_direction)
 
-		self.players[username] = player	
-		self.log_message("INFO", f"Player {username}: Added to list of players in game")	
+		self.players[unique_username] = player	
+		self.log_message("INFO", f"Player {unique_username}: Added to list of players in game")
+
+		return unique_username	
 
 
 	# Gets a random position

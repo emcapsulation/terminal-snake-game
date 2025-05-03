@@ -29,6 +29,7 @@ class Server:
 
 	# Shuts down the server
 	def close(self):
+		self.log_message("INFO", f"Shutting down server on {self.host}:{self.port}")
 		self.server.shutdown(socket.SHUT_RDWR)
 		self.server.close()
 
@@ -62,7 +63,7 @@ class Server:
 
 			if 'username' in message:
 				# Add the player to the game state and connection pool
-				self.add_player(connection)
+				self.add_player(connection, message['username'])
 
 			elif 'direction' in message:
 				# Update player direction
@@ -97,12 +98,22 @@ class Server:
 
 
 	# Adds a player to the game by username, add to connection pool
-	def add_player(self, connection):
+	def add_player(self, connection, username):
+		unique_username = username
+
 		with self.lock:
-			self.state.add_player(connection.username)
+			unique_username = self.state.add_player(username)
+			connection.username = unique_username
 
 			self.connections.append(connection)
-			self.log_message("INFO", f"List of connections: {[conn.address for conn in self.connections]} ")		
+			self.log_message("INFO", f"List of connections: {[conn.address for conn in self.connections]} ")
+
+		try:
+			self.log_message("INFO", f"Sending unique username: {unique_username}")
+			connection.socket.sendall(unique_username.encode())
+		except Exception as e:
+			self.log_message("ERROR", f"add_player: {e}")
+			self.remove_player(connection)		
 
 
 	# Removes a player from the game state and connections list
@@ -124,6 +135,6 @@ if __name__ == "__main__":
 	try:
 		server.start()
 	except Exception as e:
-		server.log_message("CRITICAL", f"{e}")
+		self.log_message("ERROR", f"{e}")
 	finally:
 		server.close()

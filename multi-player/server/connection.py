@@ -73,8 +73,9 @@ class Connection:
 		else:
 			self.log_message("INFO", f"Received username {username}")
 			username_json = self.parse_message(username)
-			self.username = username_json['username']
-			self.add_to_queue({'username': self.username})
+			
+			# Don't set self.username here, as the server needs to do a uniqueness check
+			self.add_to_queue({'username': username_json['username']})
 
 			
 
