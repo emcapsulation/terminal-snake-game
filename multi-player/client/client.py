@@ -70,16 +70,16 @@ class Client:
 
                 if "\n" in buffer:
                     line, buffer = buffer.split("\n", 1)
-                    game_state = json.loads(line)
+                    state = json.loads(line)
 
                     # Initial paint
                     if self.render == None:
-                        self.init_render(game_state['dimensions'])
+                        self.init_render(state['dimensions'])
 
-                    if self.username not in game_state['players'] or not game_state['players'][self.username]['is_alive']:
+                    if self.username not in state['players'] or not state['players'][self.username]['is_alive']:
                         break
 
-                    self.render.update_game_state(game_state)
+                    self.render.update_state(state)
 
         except Exception as e:
             pass

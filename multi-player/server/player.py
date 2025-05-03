@@ -1,11 +1,19 @@
 import json
 
+from logging_utils import get_logger, log_message
+
 class Player:
 	def __init__(self, segments, direction):
 		self.segments = segments
 		self.direction = direction
 		self.score = 0
 		self.is_alive = True
+		self.logger = get_logger(__name__)
+
+
+	# Logs a message
+	def log_message(self, type, message):
+		log_message(self.logger, type, "Player", f"{message}")
 
 
 	# Converts the object to JSON so it can be sent to the client
@@ -20,12 +28,9 @@ class Player:
 
 	# Returns the head of the snake
 	def get_head(self, j=None):
-		if len(self.segments) > 0:
-			if j != None:
-				return self.segments[0][j]
-			return self.segments[0]
-		else:
-			return None
+		if j != None:
+			return self.segments[0][j]
+		return self.segments[0]
 
 
 	# Adds the new head in the current direction
@@ -40,21 +45,19 @@ class Player:
 
 
 	# Kills the snake and performs cleanup
-	def kill_snake(self):
+	def kill_snake(self, reason):
 		self.is_alive = False
 		self.segments = []
+		self.log_message("INFO", f"Died from {reason}")
 
 
 	# Updates whether the snake is alive by checking for collision with a wall or another snake
 	def update_is_alive(self, occupied_positions, dimensions):
-		if self.get_head() == None:
-			self.kill_snake()
-
-		# Collide with another snake
 		if self.get_head() in occupied_positions:
-			self.kill_snake()
+			# Collide with another snake
+			self.kill_snake("collision")
 
-		# Collide with wall
-		if self.get_head(0) in [0, dimensions[0]-1] or self.get_head(1) in [0, dimensions[1]-1]:
-			self.kill_snake()
+		elif self.get_head(0) in [0, dimensions[0]-1] or self.get_head(1) in [0, dimensions[1]-1]:
+			# Collide with wall
+			self.kill_snake("hitting wall")
 

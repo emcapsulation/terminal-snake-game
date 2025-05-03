@@ -135,5 +135,4 @@ class State:
 			if [new_dir[0]+player.direction[0], new_dir[1]+player.direction[1]] != [0, 0]:
 				player.direction = new_dir
 				self.log_message("INFO", f"Player {username}: Direction updated to {key}")
-
 			

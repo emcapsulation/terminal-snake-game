@@ -10,7 +10,7 @@ class Render:
 		self.client_socket = client_socket
 
 		self.stdscr = curses.initscr()	
-		self.game_state = None
+		self.state = None
 
 		self.create_game_window()
 
@@ -42,27 +42,53 @@ class Render:
 
 
 	# Updates the game state
-	def update_game_state(self, new_state):
-		try:
-			if self.game_state == None:
-				self.game_state = new_state
-				self.initial_draw()	
-			else:
-				self.redraw(new_state)
-
+	def update_state(self, new_state):
+		try:	
+			self.draw(new_state)
 		except Exception:
-			self.cleanup()
+			self.cleanup()	
 
 
-	# Draws an entire snake to the screen
-	def draw_snake(self, segments):
-		for segment in segments:
-			self.win.addch(*segment, curses.ACS_BOARD)
+	# Includes optimisations rather than redrawing everything
+	def draw(self, new_state):
+		self.draw_food(new_state['food_pos'])		
+		self.draw_snakes(new_state)
+		self.draw_score(new_state['players'][self.username]['score'])
+		self.draw_leaderboard(new_state['players'])
+
+		self.win.refresh()
+		self.leaderboard_win.refresh()
+		self.state = new_state
 
 
-	# Draws the current user's score to the screen
-	def draw_score(self, score):
-		self.win.addstr(self.height-1, self.width-12, f"Score: {score}")
+	def capture_keypress(self):
+		try:
+			while True:
+				key = self.stdscr.getch()
+
+				if key == ord("w") or key == ord("a") or key == ord("s") or key == ord("d"):
+					message = json.dumps({'direction': chr(key)})
+					self.client_socket.sendall(message.encode())
+
+		except Exception as e:
+			self.cleanup()	
+
+
+	# Draws the leaderboard
+	def draw_leaderboard(self, new_players):
+		current_players = {} if self.state == None else self.state['players']
+
+		# Remove dead players
+		to_remove = len(current_players) - len(new_players)
+		while to_remove > 0:
+			self.leaderboard_win.addstr(to_remove+2, 1, self.format_leaderboard_string("", ""))
+			to_remove -= 1
+
+		# Add updated scores
+		i = 2
+		for username, snake in new_players.items():
+			self.leaderboard_win.addstr(i, 1, self.format_leaderboard_string(username, str(snake['score'])))
+			i += 1
 
 
 	# Formats the string for the leaderboard
@@ -79,89 +105,40 @@ class Render:
 		return truncated_username + " "*num_spaces + score
 
 
-	# Draws the leaderboard
-	def draw_leaderboard(self, players):
-		old_players = self.game_state['players']
-
-		to_remove = len(old_players) - len(players)
-		while to_remove > 0:
-			self.leaderboard_win.addstr(to_remove+2, 1, self.format_leaderboard_string("", ""))
-			to_remove -= 1
-
-		i = 2
-		for username, snake in players.items():
-			self.leaderboard_win.addstr(i, 1, self.format_leaderboard_string(username, str(snake['score'])))
-			i += 1
-
-
 	# Draws the food to the screen
-	def draw_food(self, food_pos):
-		self.win.addch(*food_pos, '@')
+	def draw_food(self, new_food_pos):
+		if self.state != None and new_food_pos != self.state['food_pos']:
+			self.win.addch(*self.state['food_pos'], ' ')
+		self.win.addch(*new_food_pos, '@')		
 
 
-	# Draws everything for the first time
-	def initial_draw(self):
-		self.draw_food(self.game_state['food_pos'])
-
-		for username, snake in self.game_state['players'].items():
-			self.draw_snake(snake['segments'])
-
-		self.draw_score(self.game_state['players'][self.username]['score'])
-		self.draw_leaderboard(self.game_state['players'])
-
-		self.win.refresh()
-		self.leaderboard_win.refresh()
-	
-
-	# Includes optimisations rather than redrawing everything
-	def redraw(self, new_state):
-		# Redraw food
-		if new_state['food_pos'] != self.game_state['food_pos']:
-			self.draw_food(new_state['food_pos'])
-			self.win.addch(*self.game_state['food_pos'], ' ')
-
-		# Update snakes
-		for user, new_snake in new_state['players'].items():
-			if user in self.game_state['players']:
-				current_snake = self.game_state['players'][user]
-
-				# Add head(s)
-				i = 0
-				while i < len(new_snake['segments']) and new_snake['segments'][i] not in current_snake['segments']:
-					self.win.addch(*new_snake['segments'][i], curses.ACS_BOARD)
-					i += 1		
-
-				# Pop tail(s)
-				i = len(current_snake['segments'])-1
-				while i >= 0 and current_snake['segments'][i] not in new_snake['segments']:				
-					self.win.addch(*current_snake['segments'][i], ' ')
-					i -= 1
-
-			else:
-				# New user, draw whole snake
-				self.draw_snake(new_snake['segments'])
-
-		# Update score
-		new_score = new_state['players'][self.username]['score']
-		cur_score = self.game_state['players'][self.username]['score']
-		if new_score != cur_score:
-			self.draw_score(new_score)
-
-		self.draw_leaderboard(new_state['players'])
-
-		self.win.refresh()
-		self.leaderboard_win.refresh()
-		self.game_state = new_state
+	# Draws all snakes in the new state
+	def draw_snakes(self, new_state):
+		for username, new_snake in new_state['players'].items():
+			current_snake = []
+			if self.state != None and username in self.state['players']:
+				current_snake = self.state['players'][username]['segments']
+			self.update_snake(current_snake, new_snake['segments'])
 
 
-	def capture_keypress(self):
-		try:
-			while True:
-				key = self.stdscr.getch()
+	# Draws the parts of the snake in the new state which don't exist in the current snake
+	def update_snake(self, current_snake, new_snake):
+		# Add head(s)
+		i = 0
+		while i < len(new_snake) and new_snake[i] not in current_snake:
+			self.win.addch(*new_snake[i], curses.ACS_BOARD)
+			i += 1		
 
-				if key == ord("w") or key == ord("a") or key == ord("s") or key == ord("d"):
-					message = json.dumps({'direction': chr(key)})
-					self.client_socket.sendall(message.encode())
+		# Pop tail(s)
+		i = len(current_snake)-1
+		while i >= 0 and current_snake[i] not in new_snake:				
+			self.win.addch(*current_snake[i], ' ')
+			i -= 1
 
-		except Exception as e:
-			self.cleanup()
+
+	# Draws the current user's score to the screen
+	def draw_score(self, new_score):
+		current_score = -1 if self.state == None else self.state['players'][self.username]['score']
+
+		if new_score != current_score:
+			self.win.addstr(self.height-1, self.width-12, f"Score: {new_score}")
