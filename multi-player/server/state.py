@@ -35,7 +35,7 @@ class State:
 
 
 	# Adds a new player to the map
-	def add_player(self, username):	
+	def add_player(self, username):
 		start_segment = [self.get_random_position()]
 		random_direction = State.DIRECTION_MAP[ord(random.choice(["w", "a", "s", "d"]))]
 		player = Player(start_segment, random_direction)
@@ -109,7 +109,7 @@ class State:
 
 	# Sorts the players based on score
 	def sort_leaderboard(self):
-		self.players = dict(sorted(self.players.items(), key=lambda player: player[1].score))
+		self.players = dict(sorted(self.players.items(), key=lambda player: player[1].score, reverse=True))
 
 
 	# Updates the player's direction

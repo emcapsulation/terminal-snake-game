@@ -20,10 +20,12 @@ class Player:
 
 	# Returns the head of the snake
 	def get_head(self, j=None):
-		if j != None:
-			return self.segments[0][j]
-
-		return self.segments[0]
+		if len(self.segments) > 0:
+			if j != None:
+				return self.segments[0][j]
+			return self.segments[0]
+		else:
+			return None
 
 
 	# Adds the new head in the current direction
@@ -45,6 +47,9 @@ class Player:
 
 	# Updates whether the snake is alive by checking for collision with a wall or another snake
 	def update_is_alive(self, occupied_positions, dimensions):
+		if self.get_head() == None:
+			self.kill_snake()
+
 		# Collide with another snake
 		if self.get_head() in occupied_positions:
 			self.kill_snake()

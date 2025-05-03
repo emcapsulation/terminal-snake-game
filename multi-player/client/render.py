@@ -2,6 +2,8 @@ import curses
 import json
 
 class Render:
+	LEADERBOARD_WIDTH = 15
+
 	def __init__(self, username, dimensions, client_socket):
 		self.username = username
 		self.dimensions = dimensions
@@ -27,8 +29,9 @@ class Render:
 		self.win.border()	
 		self.win.refresh()
 
-		self.leaderboard_win = curses.newwin(self.height, 15, 0, self.width+1)
-		self.leaderboard_win.border()			
+		self.leaderboard_win = curses.newwin(self.height, Render.LEADERBOARD_WIDTH, 0, self.width+1)
+		self.leaderboard_win.border()	
+		self.leaderboard_win.addstr(1, 1, "LEADERBOARD")		
 		self.leaderboard_win.refresh()
 
 
@@ -62,11 +65,32 @@ class Render:
 		self.win.addstr(self.height-1, self.width-12, f"Score: {score}")
 
 
+	# Formats the string for the leaderboard
+	def format_leaderboard_string(self, username, score):
+		total_length = Render.LEADERBOARD_WIDTH-2
+		username_length = total_length-len(score)-1
+
+		if len(username) > username_length:
+			truncated_username = username[:username_length-3] + '...'
+		else:
+			truncated_username = username
+
+		num_spaces = total_length-len(truncated_username)-len(score)
+		return truncated_username + " "*num_spaces + score
+
+
 	# Draws the leaderboard
 	def draw_leaderboard(self, players):
+		old_players = self.game_state['players']
+
+		to_remove = len(old_players) - len(players)
+		while to_remove > 0:
+			self.leaderboard_win.addstr(to_remove+2, 1, self.format_leaderboard_string("", ""))
+			to_remove -= 1
+
 		i = 2
 		for username, snake in players.items():
-			self.leaderboard_win.addstr(i, 1, f"{username} {snake['score']}")
+			self.leaderboard_win.addstr(i, 1, self.format_leaderboard_string(username, str(snake['score'])))
 			i += 1
 
 

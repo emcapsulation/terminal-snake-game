@@ -18,7 +18,7 @@ class Server:
 		self.port = port
 		self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-		self.state = State([25, 60])
+		self.state = State([30, 80])
 		self.connections = []
 		self.message_queue = queue.Queue()
 
@@ -28,6 +28,12 @@ class Server:
 
 	def log_message(self, type, message):
 		log_message(self.logger, type, "Server", message)
+
+
+	# Shuts down the server
+	def close(self):
+		self.server.shutdown(socket.SHUT_RDWR)
+		self.server.close()
 
 
 	# Starts the server
@@ -58,7 +64,6 @@ class Server:
 			self.log_message("INFO", f"Next message: {connection.username} - {message}")
 
 			if 'username' in message:
-				# TODO: Username uniqueness check
 				# Add the player to the game state and connection pool
 				self.add_player(connection)
 
@@ -119,4 +124,10 @@ if __name__ == "__main__":
 	port = 5050
 
 	server = Server(host, port)
-	server.start()
+
+	try:
+		server.start()
+	except Exception as e:
+		server.log_message("CRITICAL", f"{e}")
+	finally:
+		server.close()
