@@ -9,9 +9,6 @@ from state import State
 from logging_utils import get_logger, log_message
 
 
-# TODO: Bug if user doesnt enter username close connection
-
-
 class Server:
 	def __init__(self, host, port):
 		self.host = host
@@ -103,7 +100,6 @@ class Server:
 	def add_player(self, connection):
 		with self.lock:
 			self.state.add_player(connection.username)
-			self.log_message("INFO", f"{connection.address} {connection.username}: Player added to game")	
 
 			self.connections.append(connection)
 			self.log_message("INFO", f"List of connections: {[conn.address for conn in self.connections]} ")		
@@ -113,10 +109,10 @@ class Server:
 	def remove_player(self, connection):
 		with self.lock:
 			self.state.remove_player(connection.username)
-			self.log_message("INFO", f"{connection.address} {connection.username}: Player removed from game")
 
-			self.connections.remove(connection)			
-			self.log_message("INFO", f"List of connections: {[conn.address for conn in self.connections]} ")		
+			if connection in self.connections:
+				self.connections.remove(connection)			
+				self.log_message("INFO", f"List of connections: {[conn.address for conn in self.connections]} ")		
 
 
 if __name__ == "__main__":

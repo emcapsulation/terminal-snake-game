@@ -16,6 +16,13 @@ class Connection:
 		log_message(self.logger, type, str(self.username), f"{self.address}: {message}")
 
 
+	# Closes this connection
+	def close(self):
+		self.socket.close()
+		self.log_message("INFO", f"Connection closed")
+		self.add_to_queue({"remove_connection": self})
+
+
 	# Adds a message to the queue
 	def add_to_queue(self, message):
 		self.message_queue.put((self, message))	
@@ -24,10 +31,10 @@ class Connection:
 
 	# Basic handler - listens for messages
 	def handle(self):
-		# Get the initial username for the new connection
-		self.receive_username()
-
 		try:
+			# Get the initial username for the new connection	
+			self.receive_username()
+
 			while True:
 				data = self.socket.recv(1024)
 				if not data:
@@ -44,9 +51,7 @@ class Connection:
 			self.log_message("ERROR", f"handle: {e}")
 
 		finally:
-			self.socket.close()
-			self.log_message("INFO", f"Connection closed")
-			self.add_to_queue({"remove_connection": self})
+			self.close()
 
 
 	# Parses a message - it should be in JSON format
@@ -55,22 +60,24 @@ class Connection:
 		try:
 			parsed_msg = json.loads(msg)
 		except Exception as e:
-			self.log_message("ERROR", f"Error parsing message: {e}")	
+			self.log_message("ERROR", f"Error parsing message '{msg}': {e}")	
 		finally:
 			return parsed_msg
 
 
 	# Receives the username
 	def receive_username(self):
-		try:
-			username = self.socket.recv(1024).decode().strip()
+		username = self.socket.recv(1024).decode().strip()
+		if not username:
+			raise Exception("Username not received.")
+		else:
 			self.log_message("INFO", f"Received username {username}")
-
 			username_json = self.parse_message(username)
 			self.username = username_json['username']
 			self.add_to_queue({'username': self.username})
 
-		except Exception as e:
-			self.log_message("ERROR", f"receive_username: {e}")	
+			
+
+
 
 		

@@ -41,7 +41,7 @@ class State:
 		player = Player(start_segment, random_direction)
 
 		self.players[username] = player	
-		self.log_message("INFO", f"Player {username}: Added to list of players")	
+		self.log_message("INFO", f"Player {username}: Added to list of players in game")	
 
 
 	# Gets a random position
@@ -51,8 +51,9 @@ class State:
 
 	# Removes a player from the map
 	def remove_player(self, username):
-		self.log_message("INFO", f"Player {username}: Removing from list of players")
-		self.players.pop(username)
+		if username in self.players:
+			self.log_message("INFO", f"Player {username}: Removing from list of players in game")
+			self.players.pop(username)
 
 
 	# Where everything gets updated

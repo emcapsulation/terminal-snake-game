@@ -155,13 +155,13 @@ class Render:
 
 
 	def capture_keypress(self):
-	    try:
-	        while True:
-	            key = self.stdscr.getch()
+		try:
+			while True:
+				key = self.stdscr.getch()
 
-	            if key == ord("w") or key == ord("a") or key == ord("s") or key == ord("d"):
-	                message = json.dumps({'direction': chr(key)})
-	                self.client_socket.sendall(message.encode())
+				if key == ord("w") or key == ord("a") or key == ord("s") or key == ord("d"):
+					message = json.dumps({'direction': chr(key)})
+					self.client_socket.sendall(message.encode())
 
-	    except Exception as e:
-	        self.cleanup()
+		except Exception as e:
+			self.cleanup()
