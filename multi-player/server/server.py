@@ -48,18 +48,17 @@ class Server:
 		self.log_message("INFO", f"Server running on {self.host}:{self.port}")
 
 		# Main game loop updates
-		threading.Thread(target=self.broadcast_loop).start()
+		threading.Thread(target=self.broadcast_loop, daemon=True).start()
 
 		# Process messages from connections
-		threading.Thread(target=self.process_messages).start()
+		threading.Thread(target=self.process_messages, daemon=True).start()
 
 		while True:
 			client_socket, client_address = self.server.accept()
 			new_conn = Connection(client_socket, client_address, self.message_queue)			
 			self.log_message("INFO", f"New client connected: {new_conn.address}")
 
-			client_thread = threading.Thread(target=new_conn.handle)
-			client_thread.start()
+			client_thread = threading.Thread(target=new_conn.handle, daemon=True).start()
 
 
 	# Loops through queue and processes messages
@@ -132,7 +131,7 @@ class Server:
 		with self.conn_lock:
 			if connection in self.connections:
 				self.connections.remove(connection)			
-				self.log_message("INFO", f"List of connections: {[conn.address for conn in self.connections]} ")		
+				self.log_message("INFO", f"List of connections: {[conn.address for conn in self.connections]} ")	
 
 
 if __name__ == "__main__":
@@ -141,5 +140,9 @@ if __name__ == "__main__":
 
 	server = Server(host, port)
 
-	server.start()
-	server.close()
+	try:
+		server.start()
+	except Exception as e:
+		server.log_message("CRITICAL", f"Fatal server error: {e}")
+	finally:
+		server.close()
