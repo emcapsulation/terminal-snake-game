@@ -3,11 +3,13 @@ import json
 from logging_utils import get_logger, log_message
 
 class Player:
-	def __init__(self, segments, direction):
+	def __init__(self, segments, direction, colour_pair_id):
 		self.segments = segments
 		self.direction = direction
 		self.score = 0
 		self.is_alive = True
+		self.colour = colour_pair_id
+
 		self.logger = get_logger(__name__)
 
 
@@ -22,13 +24,14 @@ class Player:
 			"segments": self.segments,
 			"direction": self.direction,
 			"score": self.score,
-			"is_alive": self.is_alive
+			"is_alive": self.is_alive,
+			"colour": self.colour
 		}
 
 
 	# Returns the head of the snake
 	def get_head(self, j=None):
-		if j != None:
+		if j is not None:
 			return self.segments[0][j]
 		return self.segments[0]
 

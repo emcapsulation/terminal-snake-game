@@ -28,7 +28,7 @@ class Client:
 
     # Closes connection and cleans up render
     def close(self):
-        if self.render != None:
+        if self.render is not None:
             self.render.cleanup()
         self.client.close()
 
@@ -61,14 +61,15 @@ class Client:
     def update_render(self):        
         try:
             buffer = ""
-            while True:
+            running = True
+            while running:
                 data = self.client.recv(4096).decode()
                 if not data:
                     break
 
                 buffer += data
 
-                if "\n" in buffer:
+                while "\n" in buffer:
                     line, buffer = buffer.split("\n", 1)
                     state = json.loads(line)
 
@@ -77,6 +78,7 @@ class Client:
                         self.init_render(state['dimensions'])
 
                     if self.username not in state['players'] or not state['players'][self.username]['is_alive']:
+                        running = False
                         break
 
                     self.render.update_state(state)

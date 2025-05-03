@@ -44,7 +44,7 @@ class Connection:
 				messages = data.decode().split("\n")
 				for message in messages:
 					msg = self.parse_message(message)
-					if msg != None:
+					if msg is not None:
 						self.add_to_queue(msg)
 
 		except Exception as e:
@@ -65,20 +65,23 @@ class Connection:
 			return parsed_msg
 
 
-	# Receives the username
+	# Receives the username from the client
 	def receive_username(self):
 		username = self.socket.recv(1024).decode().strip()
 		if not username:
 			raise Exception("Username not received.")
 		else:
-			self.log_message("INFO", f"Received username {username}")
+			self.log_message("INFO", f"Received username: {username}")
 			username_json = self.parse_message(username)
 			
 			# Don't set self.username here, as the server needs to do a uniqueness check
 			self.add_to_queue({'username': username_json['username']})
 
-			
 
-
-
-		
+	# Sends the unique username back to the client
+	def send_username(self, username):
+		try:
+			self.log_message("INFO", f"Sending unique username: {username}")
+			self.socket.sendall(username.encode())
+		except Exception as e:
+			self.close()		

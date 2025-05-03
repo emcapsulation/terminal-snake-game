@@ -12,9 +12,11 @@ class State:
 		ord("d"): [0, 1]
 	}
 
+	COLOURS = [1, 2, 3, 4, 5, 6, 7]
 
-	def __init__(self, dimensions):
-		self.dimensions = dimensions
+
+	def __init__(self):
+		self.dimensions = [30, 80]
 		self.food_pos = self.get_random_position()
 		self.players = {}
 		self.logger = get_logger(__name__)
@@ -45,16 +47,13 @@ class State:
 
 	# Adds a new player to the map
 	def add_player(self, username):
-		unique_username = self.get_unique_username(username)
-
 		start_segment = [self.get_random_position()]
 		random_direction = State.DIRECTION_MAP[ord(random.choice(["w", "a", "s", "d"]))]
-		player = Player(start_segment, random_direction)
+		colour_pair_id = random.choice(State.COLOURS)
+		player = Player(start_segment, random_direction, colour_pair_id)
 
-		self.players[unique_username] = player	
-		self.log_message("INFO", f"Player {unique_username}: Added to list of players in game")
-
-		return unique_username	
+		self.players[username] = player	
+		self.log_message("INFO", f"Player {username}: Added to list of players in game")
 
 
 	# Gets a random position
@@ -87,14 +86,13 @@ class State:
 
 	# Regenerates the food if a snake ate it
 	def regenerate_food(self, eater, occupied_positions):
-		if eater is not None:
-			self.log_message("INFO", f"Player {eater}: Ate food")
+		self.log_message("INFO", f"Player {eater}: Ate food")
 
+		self.food_pos = self.get_random_position()
+		while self.food_pos in occupied_positions:
 			self.food_pos = self.get_random_position()
-			while self.food_pos in occupied_positions:
-				self.food_pos = self.get_random_position()
-			
-			self.players[eater].score += 1
+		
+		self.players[eater].score += 1
 
 
 	# Moves all snakes one step
@@ -117,8 +115,9 @@ class State:
 			else:
 				eater = username
 
-		# Snake got the food		
-		self.regenerate_food(eater, occupied_positions)
+		# Snake got the food	
+		if eater is not None:	
+			self.regenerate_food(eater, occupied_positions)
 
 
 	# Sorts the players based on score
@@ -128,11 +127,16 @@ class State:
 
 	# Updates the player's direction
 	def update_player_direction(self, username, key):
-		if username in self.players:
+		if username in self.players and ord(key) in State.DIRECTION_MAP:
 			player = self.players[username]			
 
 			new_dir = State.DIRECTION_MAP[ord(key)]
-			if [new_dir[0]+player.direction[0], new_dir[1]+player.direction[1]] != [0, 0]:
+			if not self.is_opposite_direction(new_dir, player.direction):
 				player.direction = new_dir
 				self.log_message("INFO", f"Player {username}: Direction updated to {key}")
+
+
+	# Checks if two directions are opposite
+	def is_opposite_direction(self, dir1, dir2):
+		return [dir1[0]+dir2[0], dir1[1]+dir2[1]] == [0, 0]
 			

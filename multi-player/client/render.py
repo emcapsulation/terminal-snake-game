@@ -4,6 +4,16 @@ import json
 class Render:
 	LEADERBOARD_WIDTH = 15
 
+	COLOUR_MAPPINGS = [
+		[1, curses.COLOR_RED, curses.COLOR_BLACK],
+		[2, curses.COLOR_GREEN, curses.COLOR_BLACK],
+		[3, curses.COLOR_YELLOW, curses.COLOR_BLACK],
+		[4, curses.COLOR_BLUE, curses.COLOR_BLACK],
+		[5, curses.COLOR_MAGENTA, curses.COLOR_BLACK],
+		[6, curses.COLOR_CYAN, curses.COLOR_BLACK],
+		[7, curses.COLOR_WHITE, curses.COLOR_BLACK]
+	]
+
 	def __init__(self, username, dimensions, client_socket):
 		self.username = username
 		self.dimensions = dimensions
@@ -23,6 +33,10 @@ class Render:
 		self.stdscr.clear()
 		self.stdscr.refresh()
 		self.stdscr.timeout(75)
+
+		curses.start_color()
+		for mapping in Render.COLOUR_MAPPINGS:
+			curses.init_pair(*mapping)
 
 		self.height, self.width = self.dimensions
 		self.win = curses.newwin(self.height, self.width, 0, 0)
@@ -87,7 +101,7 @@ class Render:
 		# Add updated scores
 		i = 2
 		for username, snake in new_players.items():
-			self.leaderboard_win.addstr(i, 1, self.format_leaderboard_string(username, str(snake['score'])))
+			self.leaderboard_win.addstr(i, 1, self.format_leaderboard_string(username, str(snake['score'])), curses.color_pair(snake['colour']))
 			i += 1
 
 
@@ -107,7 +121,7 @@ class Render:
 
 	# Draws the food to the screen
 	def draw_food(self, new_food_pos):
-		if self.state != None and new_food_pos != self.state['food_pos']:
+		if self.state is not None and new_food_pos != self.state['food_pos']:
 			self.win.addch(*self.state['food_pos'], ' ')
 		self.win.addch(*new_food_pos, '@')		
 
@@ -116,17 +130,17 @@ class Render:
 	def draw_snakes(self, new_state):
 		for username, new_snake in new_state['players'].items():
 			current_snake = []
-			if self.state != None and username in self.state['players']:
+			if self.state is not None and username in self.state['players']:
 				current_snake = self.state['players'][username]['segments']
-			self.update_snake(current_snake, new_snake['segments'])
+			self.update_snake(current_snake, new_snake['segments'], new_snake['colour'])
 
 
 	# Draws the parts of the snake in the new state which don't exist in the current snake
-	def update_snake(self, current_snake, new_snake):
+	def update_snake(self, current_snake, new_snake, snake_colour):
 		# Add head(s)
 		i = 0
 		while i < len(new_snake) and new_snake[i] not in current_snake:
-			self.win.addch(*new_snake[i], curses.ACS_BOARD)
+			self.win.addch(*new_snake[i], curses.ACS_BOARD, curses.color_pair(snake_colour))
 			i += 1		
 
 		# Pop tail(s)

@@ -15,7 +15,7 @@ class Server:
 		self.port = port
 		self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-		self.state = State([30, 80])
+		self.state = State()
 		self.connections = []
 		self.message_queue = queue.Queue()
 
@@ -41,17 +41,17 @@ class Server:
 		self.log_message("INFO", f"Server running on {self.host}:{self.port}")
 
 		# Main game loop updates
-		threading.Thread(target=self.broadcast_loop, daemon=True).start()
+		threading.Thread(target=self.broadcast_loop).start()
 
 		# Process messages from connections
-		threading.Thread(target=self.process_messages, daemon=True).start()
+		threading.Thread(target=self.process_messages).start()
 
 		while True:
 			client_socket, client_address = self.server.accept()
 			new_conn = Connection(client_socket, client_address, self.message_queue)			
 			self.log_message("INFO", f"New client connected: {new_conn.address}")
 
-			client_thread = threading.Thread(target=new_conn.handle, daemon=True)
+			client_thread = threading.Thread(target=new_conn.handle)
 			client_thread.start()
 
 
@@ -94,6 +94,7 @@ class Server:
 			with self.lock:
 				self.state.update_state()
 				self.broadcast(self.state.to_json())
+
 			time.sleep(0.075)
 
 
@@ -102,18 +103,15 @@ class Server:
 		unique_username = username
 
 		with self.lock:
-			unique_username = self.state.add_player(username)
+			unique_username = self.state.get_unique_username(username)
+			self.state.add_player(unique_username)
 			connection.username = unique_username
+
+			# Send the unique username back to the client
+			connection.send_username(unique_username)
 
 			self.connections.append(connection)
 			self.log_message("INFO", f"List of connections: {[conn.address for conn in self.connections]} ")
-
-		try:
-			self.log_message("INFO", f"Sending unique username: {unique_username}")
-			connection.socket.sendall(unique_username.encode())
-		except Exception as e:
-			self.log_message("ERROR", f"add_player: {e}")
-			self.remove_player(connection)		
 
 
 	# Removes a player from the game state and connections list
