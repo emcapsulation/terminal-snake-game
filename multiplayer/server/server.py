@@ -85,6 +85,7 @@ class Server:
 
 	# Sends a message to all clients
 	def broadcast(self, message):
+		# self.log_message("DEBUG", f"{message}")
 		message_bytes = message.encode() + b"\n"
 
 		with self.conn_lock:
@@ -141,11 +142,5 @@ if __name__ == "__main__":
 
 	server = Server(host, port)
 
-	try:
-		server.start()
-	except KeyboardInterrupt:
-		server.log_message("INFO", f"Keyboard interrupt, quitting server")
-	except Exception as e:
-		server.log_message("CRITICAL", f"Fatal server error: {e}")
-	finally:
-		server.close()
+	server.start()
+	server.close()

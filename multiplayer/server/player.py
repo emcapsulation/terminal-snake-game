@@ -7,7 +7,6 @@ class Player:
 		self.segments = segments
 		self.direction = direction
 		self.score = 0
-		self.is_alive = True
 		self.colour = colour_pair_id
 
 		self.logger = get_logger(__name__)
@@ -24,7 +23,6 @@ class Player:
 			"segments": self.segments,
 			"direction": self.direction,
 			"score": self.score,
-			"is_alive": self.is_alive,
 			"colour": self.colour
 		}
 
@@ -47,20 +45,13 @@ class Player:
 		self.segments.pop()
 
 
-	# Kills the snake and performs cleanup
-	def kill_snake(self, reason):
-		self.is_alive = False
-		self.segments = []
-		self.log_message("INFO", f"Died from {reason}")
-
-
 	# Updates whether the snake is alive by checking for collision with a wall or another snake
-	def update_is_alive(self, occupied_positions, dimensions):
+	def check_is_alive(self, occupied_positions, dimensions):
 		if self.get_head() in occupied_positions:
-			# Collide with another snake
-			self.kill_snake("collision")
+			return False
 
 		elif self.get_head(0) in [0, dimensions[0]-1] or self.get_head(1) in [0, dimensions[1]-1]:
-			# Collide with wall
-			self.kill_snake("hitting wall")
+			return False
+
+		return True
 

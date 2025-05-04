@@ -134,6 +134,12 @@ class Render:
 				current_snake = self.state['players'][username]['segments']
 			self.update_snake(current_snake, new_snake['segments'], new_snake['colour'])
 
+		# Remove eliminated snakes
+		if self.state is not None:
+			for username, current_snake in self.state['players'].items():
+				if username not in new_state['players']:
+					self.update_snake(current_snake['segments'], [], current_snake['colour'])
+
 
 	# Draws the parts of the snake in the new state which don't exist in the current snake
 	def update_snake(self, current_snake, new_snake, snake_colour):

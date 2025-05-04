@@ -28,18 +28,18 @@ class Client:
 		try:            
 			self.client.connect((self.host, self.port))
 		except Exception as e:
-			print(f"ERROR - Could not connect to server: {self.host}:{self.port}")
-			self.close()
+			self.close(f"ERROR - Could not connect to server: {self.host}:{self.port}")
 			return False
 		else:
 			return True
 
 
 	# Closes connection and cleans up render
-	def close(self):
+	def close(self, message):
 		if self.render is not None:
 			self.render.cleanup()
 		self.client.close()
+		print(message)
 
 
 	# Sends a username upon first join
@@ -48,14 +48,14 @@ class Client:
 		try:
 			self.client.sendall(json.dumps({'username': username}).encode())
 		except Exception as e:
-			self.close()
+			self.close("Could not send username to server.")
 
 
 	# Receives the username back from the server
 	def receive_username(self):
 		username = self.client.recv(1024).decode().strip()
 		if not username:
-			self.close()
+			self.close("Could not receive initial game state.")
 		else:
 			self.username = username
 
@@ -86,7 +86,7 @@ class Client:
 					if self.render == None:
 						self.init_render(state['dimensions'])
 
-					if self.username not in state['players'] or not state['players'][self.username]['is_alive']:
+					if self.username not in state['players']:
 						running = False
 						break
 
@@ -94,9 +94,8 @@ class Client:
 
 		except Exception as e:
 			pass
-
 		finally:
-			self.close()         
+			self.close("Game over.")         
 
 
 if __name__ == "__main__":
@@ -105,3 +104,4 @@ if __name__ == "__main__":
 
 	client = Client(server_ip, port)
 	client.main()
+	client.close("Ending game.")

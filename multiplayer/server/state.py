@@ -68,12 +68,6 @@ class State:
 			self.players.pop(username)
 
 
-	# Where everything gets updated
-	def update_state(self):
-		self.update_snakes()
-		self.sort_leaderboard()
-
-
 	# Gets the segments from all snakes
 	def get_occupied_positions(self):
 		occupied_positions = []
@@ -96,17 +90,19 @@ class State:
 
 
 	# Moves all snakes one step
-	def update_snakes(self):
+	def update_state(self):
+		eliminated_players = []
+
 		occupied_positions = self.get_occupied_positions()
 		eater = None
 		for username, player in self.players.items():
 			# Add the new head
 			player.add_new_head()
 			
-			# Update whether he survived the move
-			player.update_is_alive(occupied_positions, self.dimensions)
-			if not player.is_alive:
+			# Update whether he survived the move			
+			if not player.check_is_alive(occupied_positions, self.dimensions):
 				self.log_message("INFO", f"Player {username}: Has died")
+				eliminated_players.append(username)
 				continue
 
 			# Check if he ate food
@@ -118,6 +114,10 @@ class State:
 		# Snake got the food	
 		if eater is not None:	
 			self.regenerate_food(eater, occupied_positions)
+			self.sort_leaderboard()
+
+		for username in eliminated_players:
+			self.remove_player(username)
 
 
 	# Sorts the players based on score
