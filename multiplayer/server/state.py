@@ -19,6 +19,7 @@ class State:
 		self.dimensions = [30, 80]
 		self.food_pos = self.get_random_position()
 		self.players = {}
+		
 		self.logger = get_logger(__name__)
 
 
@@ -34,6 +35,12 @@ class State:
 			"food_pos": self.food_pos,
 			"players": {username: player.to_dict() for username, player in self.players.items()}
 		})
+
+
+	# Gets a random position
+	def get_random_position(self, buffer=0):
+		return [random.randint(1+buffer, self.dimensions[0]-2-buffer), 
+			random.randint(1+buffer, self.dimensions[1]-2-buffer)]	
 
 
 	# Appends a number until the username is unique
@@ -65,12 +72,6 @@ class State:
 			self.log_message("INFO", f"Player {username}: Removing from list of players in game")
 			self.players.pop(username)		
 			self.log_message("DEBUG", f"List of players: {[username for username in self.players]}")
-
-
-	# Gets a random position
-	def get_random_position(self, buffer=0):
-		return [random.randint(1+buffer, self.dimensions[0]-2-buffer), 
-			random.randint(1+buffer, self.dimensions[1]-2-buffer)]	
 
 
 	# Gets the segments from all snakes

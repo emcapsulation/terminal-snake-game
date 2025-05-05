@@ -14,10 +14,10 @@ class Render:
 		[7, curses.COLOR_WHITE, curses.COLOR_BLACK]
 	]
 
-	def __init__(self, username, dimensions, client_socket):
+	def __init__(self, username, dimensions, client):
 		self.username = username
 		self.dimensions = dimensions
-		self.client_socket = client_socket
+		self.client = client
 
 		self.stdscr = curses.initscr()	
 		self.state = None
@@ -49,7 +49,7 @@ class Render:
 		self.leaderboard_win.refresh()
 
 
-	# Cleans everything
+	# Cleans up the terminal
 	def cleanup(self):
 		curses.echo()
 		curses.endwin()
@@ -80,12 +80,14 @@ class Render:
 			while True:
 				key = self.stdscr.getch()
 
-				if key == ord("w") or key == ord("a") or key == ord("s") or key == ord("d"):
+				if key in [ord("w"), ord("a"), ord("s"), ord("d")]:
 					message = json.dumps({'direction': chr(key)})
-					self.client_socket.sendall(message.encode())
+					self.client.send(message)
 
 		except Exception as e:
-			self.cleanup()	
+			pass
+		finally:
+			self.cleanup()
 
 
 	# Draws the leaderboard

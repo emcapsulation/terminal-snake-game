@@ -1,4 +1,5 @@
 import json
+import traceback
 
 from logging_utils import get_logger, log_message
 
@@ -8,6 +9,7 @@ class Connection:
 		self.address = address
 		self.message_queue = message_queue
 		self.username = None
+
 		self.logger = get_logger(__name__)
 
 
@@ -23,6 +25,14 @@ class Connection:
 		self.add_to_queue({"remove_connection": self})
 
 
+	# Sends a message
+	def send(self, message):
+		try:
+			self.socket.sendall(message.encode() + b'\n')
+		except Exception as e:
+			self.log_message("ERROR", traceback.format_exc())
+
+
 	# Adds a message to the queue
 	def add_to_queue(self, message):
 		self.message_queue.put((self, message))	
@@ -35,21 +45,24 @@ class Connection:
 			# Get the initial username for the new connection	
 			self.receive_username()
 
+			buffer = ""
 			while True:
-				data = self.socket.recv(1024)
+				data = self.socket.recv(1024).decode()
 				if not data:
 					break
 
+				buffer += data
+
 				# Process the received data and add to queue
-				messages = data.decode().split("\n")
-				for message in messages:
+				while "\n" in buffer:
+					message, buffer = buffer.split("\n", 1)
 					msg = self.parse_message(message)
+
 					if msg is not None:
 						self.add_to_queue(msg)
 
 		except Exception as e:
-			self.log_message("ERROR", f"handle: {e}")
-
+			self.log_message("ERROR", traceback.format_exc())
 		finally:
 			self.close()
 
@@ -60,7 +73,7 @@ class Connection:
 		try:
 			parsed_msg = json.loads(msg)
 		except Exception as e:
-			self.log_message("ERROR", f"Error parsing message '{msg}': {e}")	
+			self.log_message("ERROR", traceback.format_exc())	
 		finally:
 			return parsed_msg
 
@@ -73,15 +86,13 @@ class Connection:
 		else:
 			self.log_message("INFO", f"Received username: {username}")
 			username_json = self.parse_message(username)
-			
-			# Don't set self.username here, as the server needs to do a uniqueness check
-			self.add_to_queue({'username': username_json['username']})
+			self.add_to_queue(username_json)
 
 
 	# Sends the unique username back to the client
 	def send_username(self, username):
 		try:
 			self.log_message("INFO", f"Sending unique username: {username}")
-			self.socket.sendall(username.encode())
+			self.send(username)
 		except Exception as e:
 			self.close()		

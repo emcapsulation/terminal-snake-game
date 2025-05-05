@@ -8,7 +8,7 @@ class Player:
 		self.direction = direction
 		self.score = 0
 		self.colour = colour_pair_id
-
+		
 		self.logger = get_logger(__name__)
 
 
@@ -48,9 +48,11 @@ class Player:
 	# Updates whether the snake is alive by checking for collision with a wall or another snake
 	def check_is_alive(self, occupied_positions, dimensions):
 		if self.get_head() in occupied_positions:
+			self.log_message("INFO", "Player collided with a segment")
 			return False
 
 		elif self.get_head(0) in [0, dimensions[0]-1] or self.get_head(1) in [0, dimensions[1]-1]:
+			self.log_message("INFO", "Player hit wall")
 			return False
 
 		return True

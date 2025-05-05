@@ -42,13 +42,18 @@ class Client:
 		print(message)
 
 
+	# Sends a message
+	def send(self, message):
+		try:
+			self.client.sendall(message.encode() + b'\n')
+		except Exception as e:
+			self.close("Could not send message to server.")
+
+
 	# Sends a username upon first join
 	def send_username(self):
 		username = input("Enter your username: ").strip()
-		try:
-			self.client.sendall(json.dumps({'username': username}).encode())
-		except Exception as e:
-			self.close("Could not send username to server.")
+		self.send(json.dumps({'username': username}))
 
 
 	# Receives the username back from the server
@@ -62,7 +67,7 @@ class Client:
 
 	# Initial paint of the window
 	def init_render(self, dimensions):
-		self.render = Render(self.username, dimensions, self.client)
+		self.render = Render(self.username, dimensions, self)
 		threading.Thread(target=self.render.capture_keypress, daemon=True).start()
 
 
@@ -71,6 +76,7 @@ class Client:
 		try:
 			buffer = ""
 			running = True
+
 			while running:
 				data = self.client.recv(4096).decode()
 				if not data:
@@ -86,12 +92,15 @@ class Client:
 					if self.render == None:
 						self.init_render(state['dimensions'])
 
+					# Player has been removed from game
 					if self.username not in state['players']:
 						running = False
 						break
 
 					self.render.update_state(state)
 
+		except KeyboardInterrupt:
+			print("Keyboard interrupt - quitting game.")
 		except Exception as e:
 			pass
 		finally:

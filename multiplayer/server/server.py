@@ -92,12 +92,10 @@ class Server:
 
 	# Sends a message to all clients
 	def broadcast(self, message):
-		message_bytes = message.encode() + b"\n"
-
 		with self.conn_lock:
 			for connection in list(self.connections):
 				try:
-					connection.socket.sendall(message_bytes)
+					connection.send(message)
 				except Exception as e:
 					self.log_message("ERROR", traceback.format_exc())
 					self.remove_player(connection)
