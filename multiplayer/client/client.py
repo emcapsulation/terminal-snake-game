@@ -14,7 +14,7 @@ class Client:
 
 
 	# The main loop
-	def main(self):
+	def start(self):
 		try:            
 			self.socket.connect((self.host, self.port))
 		except Exception as e:
@@ -103,5 +103,5 @@ if __name__ == "__main__":
 	port = 5050
 
 	client = Client(server_ip, port)
-	client.main()
+	client.start()
 	client.close("Ending game.")

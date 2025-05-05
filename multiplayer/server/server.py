@@ -35,7 +35,7 @@ class Server:
 
 		with self.conn_lock:
 			for connection in self.connections:
-				connection.close()
+				connection.socket.close()
 
 		self.socket.close()
 
@@ -56,8 +56,8 @@ class Server:
 		# Main listening loop
 		try:
 			while True:
-				client_socket, client_address = self.socket.accept()
-				new_conn = Connection(client_socket, client_address, self.message_queue)			
+				conn, address = self.socket.accept()
+				new_conn = Connection(conn, address, self.message_queue)			
 				self.log_message("INFO", f"New client connected: {new_conn.address}")
 
 				client_thread = threading.Thread(target=new_conn.handle, daemon=True).start()
@@ -132,8 +132,10 @@ class Server:
 		with self.state_lock:
 			self.state.remove_player(connection.username)
 
+		connection.socket.close()
+
 		with self.conn_lock:
-			if connection in self.connections:
+			if connection in self.connections:				
 				self.connections.remove(connection)			
 				self.log_message("DEBUG", f"List of connections: {[conn.address for conn in self.connections]}")	
 
