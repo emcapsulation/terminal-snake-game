@@ -47,25 +47,30 @@ class State:
 
 	# Adds a new player to the map
 	def add_player(self, username):
-		start_segment = [self.get_random_position()]
+		self.log_message("INFO", f"Player {username}: Adding to list of players in game")
+
+		start_segment = [self.get_random_position(buffer=5)]
 		random_direction = State.DIRECTION_MAP[ord(random.choice(["w", "a", "s", "d"]))]
 		colour_pair_id = random.choice(State.COLOURS)
+
 		player = Player(start_segment, random_direction, colour_pair_id)
-
 		self.players[username] = player	
-		self.log_message("INFO", f"Player {username}: Added to list of players in game")
 
-
-	# Gets a random position
-	def get_random_position(self):
-		return [random.randint(1, self.dimensions[0]-2), random.randint(1, self.dimensions[1]-2)]
+		self.log_message("DEBUG", f"List of players: {[username for username in self.players]}")
 
 
 	# Removes a player from the map
 	def remove_player(self, username):
 		if username in self.players:
 			self.log_message("INFO", f"Player {username}: Removing from list of players in game")
-			self.players.pop(username)
+			self.players.pop(username)		
+			self.log_message("DEBUG", f"List of players: {[username for username in self.players]}")
+
+
+	# Gets a random position
+	def get_random_position(self, buffer=0):
+		return [random.randint(1+buffer, self.dimensions[0]-2-buffer), 
+			random.randint(1+buffer, self.dimensions[1]-2-buffer)]	
 
 
 	# Gets the segments from all snakes

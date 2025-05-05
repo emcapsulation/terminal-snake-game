@@ -19,7 +19,7 @@ class Connection:
 	# Closes this connection
 	def close(self):
 		self.socket.close()
-		self.log_message("INFO", f"Connection closed")
+		self.log_message("WARNING", f"Connection closed")
 		self.add_to_queue({"remove_connection": self})
 
 

@@ -3,6 +3,7 @@ import socket
 import queue
 import threading
 import time
+import traceback
 
 from connection import Connection
 from state import State
@@ -25,6 +26,7 @@ class Server:
 		self.logger = get_logger(__name__)
 
 
+	# Logs a message
 	def log_message(self, type, message):
 		log_message(self.logger, type, "Server", message)
 
@@ -35,9 +37,8 @@ class Server:
 
 		with self.conn_lock:
 			for connection in self.connections:
-				connection.socket.close()
+				connection.close()
 
-		self.server.shutdown(socket.SHUT_RDWR)
 		self.server.close()
 
 
@@ -54,12 +55,19 @@ class Server:
 		# Process messages from connections
 		threading.Thread(target=self.process_messages, daemon=True).start()
 
-		while True:
-			client_socket, client_address = self.server.accept()
-			new_conn = Connection(client_socket, client_address, self.message_queue)			
-			self.log_message("INFO", f"New client connected: {new_conn.address}")
+		# Main listening loop
+		try:
+			while True:
+				client_socket, client_address = self.server.accept()
+				new_conn = Connection(client_socket, client_address, self.message_queue)			
+				self.log_message("INFO", f"New client connected: {new_conn.address}")
 
-			client_thread = threading.Thread(target=new_conn.handle, daemon=True).start()
+				client_thread = threading.Thread(target=new_conn.handle, daemon=True).start()
+
+		except KeyboardInterrupt:
+			self.log_message("WARNING", f"Keyboard interrupt, quitting server")
+		finally:
+			self.close()
 
 
 	# Loops through queue and processes messages
@@ -76,7 +84,6 @@ class Server:
 				# Update player direction
 				with self.state_lock:
 					self.state.update_player_direction(connection.username, message['direction'])
-					self.log_message("INFO", f"Updated direction of {connection.username} to {message['direction']}")
 
 			elif 'remove_connection' in message:
 				# Remove client
@@ -85,7 +92,6 @@ class Server:
 
 	# Sends a message to all clients
 	def broadcast(self, message):
-		# self.log_message("DEBUG", f"{message}")
 		message_bytes = message.encode() + b"\n"
 
 		with self.conn_lock:
@@ -93,7 +99,7 @@ class Server:
 				try:
 					connection.socket.sendall(message_bytes)
 				except Exception as e:
-					self.log_message("ERROR", f"broadcast: {e}")
+					self.log_message("ERROR", traceback.format_exc())
 					self.remove_player(connection)
 
 
@@ -122,7 +128,7 @@ class Server:
 
 		with self.conn_lock:
 			self.connections.append(connection)
-			self.log_message("INFO", f"List of connections: {[conn.address for conn in self.connections]} ")
+			self.log_message("DEBUG", f"List of connections: {[conn.address for conn in self.connections]}")
 
 
 	# Removes a player from the game state and connections list
@@ -133,7 +139,7 @@ class Server:
 		with self.conn_lock:
 			if connection in self.connections:
 				self.connections.remove(connection)			
-				self.log_message("INFO", f"List of connections: {[conn.address for conn in self.connections]} ")	
+				self.log_message("DEBUG", f"List of connections: {[conn.address for conn in self.connections]}")	
 
 
 if __name__ == "__main__":
@@ -141,6 +147,7 @@ if __name__ == "__main__":
 	port = 5050
 
 	server = Server(host, port)
-
 	server.start()
+
+	server.log_message("INFO", "Main function ended, cleaning up")
 	server.close()
