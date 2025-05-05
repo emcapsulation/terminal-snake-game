@@ -2,15 +2,14 @@ import logging
 
 logging.basicConfig(
 	level=logging.DEBUG,
-	format="%(levelname)s - %(message)s"
+	format="%(levelname)-8s - %(message)s"
 )
 
-def get_logger(name):
-	return logging.getLogger(name)
+logger = logging.getLogger()
 
-def log_message(logger, level, component, message):
+def log_message(level, component, message):
 	PAD = 15
-	format_string = f"{component.ljust(PAD)} | {message}"
+	format_string = f"{component.ljust(PAD)} | {message}"	
 
 	level = level.upper()
 	if level == "INFO":

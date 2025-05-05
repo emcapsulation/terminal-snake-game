@@ -1,7 +1,7 @@
 import json
 import random
 
-from logging_utils import get_logger, log_message
+from logging_utils import log_message
 from player import Player
 
 class State:
@@ -19,13 +19,11 @@ class State:
 		self.dimensions = [30, 80]
 		self.food_pos = self.get_random_position()
 		self.players = {}
-		
-		self.logger = get_logger(__name__)
 
 
 	# Logs a message
 	def log_message(self, type, message):
-		log_message(self.logger, type, f"State", message)
+		log_message(type, f"State", message)
 
 
 	# Converts the object to JSON so it can be sent to the client

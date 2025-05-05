@@ -1,7 +1,7 @@
 import json
 import traceback
 
-from logging_utils import get_logger, log_message
+from logging_utils import log_message
 
 class Connection:
 	def __init__(self, socket, address, message_queue):
@@ -10,12 +10,10 @@ class Connection:
 		self.message_queue = message_queue
 		self.username = None
 
-		self.logger = get_logger(__name__)
-
 
 	# Logs a message
 	def log_message(self, type, message):
-		log_message(self.logger, type, str(self.username), f"{self.address}: {message}")
+		log_message(type, str(self.username), f"{self.address}: {message}")
 
 
 	# Closes this connection

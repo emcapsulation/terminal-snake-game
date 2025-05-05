@@ -1,6 +1,6 @@
 import json
 
-from logging_utils import get_logger, log_message
+from logging_utils import log_message
 
 class Player:
 	def __init__(self, segments, direction, colour_pair_id):
@@ -8,13 +8,11 @@ class Player:
 		self.direction = direction
 		self.score = 0
 		self.colour = colour_pair_id
-		
-		self.logger = get_logger(__name__)
 
 
 	# Logs a message
 	def log_message(self, type, message):
-		log_message(self.logger, type, "Player", f"{message}")
+		log_message(type, "Player", f"{message}")
 
 
 	# Converts the object to JSON so it can be sent to the client

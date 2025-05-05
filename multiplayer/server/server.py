@@ -7,7 +7,7 @@ import traceback
 
 from connection import Connection
 from state import State
-from logging_utils import get_logger, log_message
+from logging_utils import log_message
 
 
 class Server:
@@ -23,12 +23,10 @@ class Server:
 		self.state_lock = threading.Lock()
 		self.conn_lock = threading.Lock()
 
-		self.logger = get_logger(__name__)
-
 
 	# Logs a message
 	def log_message(self, type, message):
-		log_message(self.logger, type, "Server", message)
+		log_message(type, "Server", message)
 
 
 	# Shuts down the server
