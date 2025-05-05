@@ -7,7 +7,7 @@ class Client:
 	def __init__(self, host, port):
 		self.host = host
 		self.port = port
-		self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 		self.username = ""
 		self.render = None
@@ -15,37 +15,28 @@ class Client:
 
 	# The main loop
 	def main(self):
-		connected = self.connect()
-
-		if connected:
+		try:            
+			self.socket.connect((self.host, self.port))
+		except Exception as e:
+			self.close(f"ERROR - Could not connect to server: {self.host}:{self.port}")
+		else:
 			self.send_username()
 			self.receive_username()
 			self.update_render()
-
-
-	# Connect to server
-	def connect(self):   
-		try:            
-			self.client.connect((self.host, self.port))
-		except Exception as e:
-			self.close(f"ERROR - Could not connect to server: {self.host}:{self.port}")
-			return False
-		else:
-			return True
 
 
 	# Closes connection and cleans up render
 	def close(self, message):
 		if self.render is not None:
 			self.render.cleanup()
-		self.client.close()
+		self.socket.close()
 		print(message)
 
 
 	# Sends a message
 	def send(self, message):
 		try:
-			self.client.sendall(message.encode() + b'\n')
+			self.socket.sendall(message.encode() + b'\n')
 		except Exception as e:
 			self.close("Could not send message to server.")
 
@@ -58,7 +49,7 @@ class Client:
 
 	# Receives the username back from the server
 	def receive_username(self):
-		username = self.client.recv(1024).decode().strip()
+		username = self.socket.recv(1024).decode().strip()
 		if not username:
 			self.close("Could not receive initial game state.")
 		else:
@@ -78,7 +69,7 @@ class Client:
 			running = True
 
 			while running:
-				data = self.client.recv(4096).decode()
+				data = self.socket.recv(4096).decode()
 				if not data:
 					break
 

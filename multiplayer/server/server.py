@@ -14,7 +14,7 @@ class Server:
 	def __init__(self, host, port):
 		self.host = host
 		self.port = port
-		self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 		self.state = State()
 		self.connections = []
@@ -39,13 +39,13 @@ class Server:
 			for connection in self.connections:
 				connection.close()
 
-		self.server.close()
+		self.socket.close()
 
 
 	# Starts the server
 	def start(self):
-		self.server.bind((self.host, self.port))
-		self.server.listen()
+		self.socket.bind((self.host, self.port))
+		self.socket.listen()
 		self.log_message("INFO", f"Server running on {self.host}:{self.port}")
 		self.log_message("INFO", f"Local server IP: {socket.gethostbyname(socket.gethostname())}")
 
@@ -58,7 +58,7 @@ class Server:
 		# Main listening loop
 		try:
 			while True:
-				client_socket, client_address = self.server.accept()
+				client_socket, client_address = self.socket.accept()
 				new_conn = Connection(client_socket, client_address, self.message_queue)			
 				self.log_message("INFO", f"New client connected: {new_conn.address}")
 
