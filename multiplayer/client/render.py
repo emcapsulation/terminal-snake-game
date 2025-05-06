@@ -97,7 +97,7 @@ class Render:
 		# Remove dead players
 		to_remove = len(current_players) - len(new_players)
 		while to_remove > 0:
-			self.leaderboard_win.addstr(to_remove+2, 1, self.format_leaderboard_string("", ""))
+			self.leaderboard_win.addstr(len(current_players)+2-to_remove, 1, self.format_leaderboard_string("", ""))
 			to_remove -= 1
 
 		# Add updated scores
