@@ -26,18 +26,7 @@ class Server:
 
 	# Logs a message
 	def log_message(self, type, message):
-		log_message(type, "Server", message)
-
-
-	# Shuts down the server
-	def close(self):
-		self.log_message("INFO", f"Shutting down server on {self.host}:{self.port}")
-
-		with self.conn_lock:
-			for connection in self.connections:
-				connection.socket.close()
-
-		self.socket.close()
+		log_message(type, "Server", message)	
 
 
 	# Starts the server
@@ -66,6 +55,17 @@ class Server:
 			self.log_message("WARNING", f"Keyboard interrupt, quitting server")
 		finally:
 			self.close()
+
+
+	# Shuts down the server
+	def close(self):
+		self.log_message("INFO", f"Shutting down server on {self.host}:{self.port}")
+
+		with self.conn_lock:
+			for connection in self.connections:
+				connection.socket.close()
+
+		self.socket.close()
 
 
 	# Loops through queue and processes messages

@@ -117,11 +117,12 @@ class State:
 
 		# Snake got the food	
 		if eater is not None:	
-			self.regenerate_food(eater, occupied_positions)
-			self.sort_leaderboard()
+			self.regenerate_food(eater, occupied_positions)			
 
 		for username in eliminated_players:
 			self.remove_player(username)
+
+		self.sort_leaderboard()
 
 
 	# Sorts the players based on score
