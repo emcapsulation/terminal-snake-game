@@ -20,7 +20,7 @@ class Connection:
 	def close(self):
 		self.socket.close()
 		self.log_message("WARNING", f"Connection closed")
-		self.add_to_queue({"remove_connection": self})
+		self.add_to_queue({'remove_connection': self})
 
 
 	# Sends a message
@@ -29,18 +29,19 @@ class Connection:
 			self.socket.sendall(message.encode() + b'\n')
 		except Exception as e:
 			self.log_message("ERROR", traceback.format_exc())
+			self.close()
 
 
 	# Adds a message to the queue
 	def add_to_queue(self, message):
-		self.message_queue.put((self, message))	
-		self.log_message("INFO", f"Message added to queue: {message}")		
+		self.message_queue.put((self, message))
+		self.log_message("INFO", f"Message added to queue: {message}")
 
 
-	# Basic handler - listens for messages
+	# Basic handler - receives messages
 	def handle(self):
 		try:
-			# Get the initial username for the new connection	
+			# Get the initial username for the new connection
 			self.receive_username()
 
 			buffer = ""
@@ -51,9 +52,9 @@ class Connection:
 
 				buffer += data
 
-				# Process the received data and add to queue
-				while "\n" in buffer:
-					message, buffer = buffer.split("\n", 1)
+				# Process the received data and add to message queue
+				while '\n' in buffer:
+					message, buffer = buffer.split('\n', 1)
 					msg = self.parse_message(message)
 
 					if msg is not None:
@@ -85,12 +86,3 @@ class Connection:
 			self.log_message("INFO", f"Received username: {username}")
 			username_json = self.parse_message(username)
 			self.add_to_queue(username_json)
-
-
-	# Sends the unique username back to the client
-	def send_username(self, username):
-		try:
-			self.log_message("INFO", f"Sending unique username: {username}")
-			self.send(username)
-		except Exception as e:
-			self.close()		

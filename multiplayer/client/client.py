@@ -1,7 +1,9 @@
-import socket
 import json
+import socket
 import threading
+
 from render import Render
+
 
 class Client:
 	def __init__(self, host, port):
@@ -13,15 +15,16 @@ class Client:
 		self.render = None
 
 
-	# The main loop
+	# Starts the client
 	def start(self):
-		try:            
+		try:
 			self.socket.connect((self.host, self.port))
 		except Exception as e:
 			self.close(f"ERROR - Could not connect to server: {self.host}:{self.port}")
 		else:
+			print(f"Connected to server on {self.host}:{self.port}")
 			self.send_username()
-			self.receive_username()
+			self.receive_unique_username()
 			self.update_render()
 
 
@@ -38,7 +41,7 @@ class Client:
 		try:
 			self.socket.sendall(message.encode() + b'\n')
 		except Exception as e:
-			self.close("Could not send message to server.")
+			self.close("Could not send message to the server.")
 
 
 	# Sends a username upon first join
@@ -47,23 +50,24 @@ class Client:
 		self.send(json.dumps({'username': username}))
 
 
-	# Receives the username back from the server
-	def receive_username(self):
+	# Receives the unique username back from the server
+	def receive_unique_username(self):
 		username = self.socket.recv(1024).decode().strip()
 		if not username:
 			self.close("Could not receive initial game state.")
 		else:
 			self.username = username
+			print(f"Welcome, {self.username}")
 
 
-	# Initial paint of the window
+	# Draw the initial game window
 	def init_render(self, dimensions):
 		self.render = Render(self.username, dimensions, self)
 		threading.Thread(target=self.render.capture_keypress, daemon=True).start()
 
 
 	# Redraws the game window based on the new state
-	def update_render(self):        
+	def update_render(self):
 		try:
 			buffer = ""
 			running = True
@@ -83,7 +87,7 @@ class Client:
 					if self.render == None:
 						self.init_render(state['dimensions'])
 
-					# Player has been removed from game
+					# Player has been removed from the game
 					if self.username not in state['players']:
 						running = False
 						break
@@ -95,7 +99,7 @@ class Client:
 		except Exception as e:
 			pass
 		finally:
-			self.close("Game over.")         
+			self.close("Game over.")
 
 
 if __name__ == "__main__":

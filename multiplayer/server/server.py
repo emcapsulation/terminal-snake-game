@@ -1,13 +1,11 @@
-import json
-import socket
 import queue
+import socket
 import threading
 import time
-import traceback
 
 from connection import Connection
-from state import State
 from logging_utils import log_message
+from state import State
 
 
 class Server:
@@ -26,7 +24,7 @@ class Server:
 
 	# Logs a message
 	def log_message(self, type, message):
-		log_message(type, "Server", message)	
+		log_message(type, "Server", message)
 
 
 	# Starts the server
@@ -46,10 +44,10 @@ class Server:
 		try:
 			while True:
 				conn, address = self.socket.accept()
-				new_conn = Connection(conn, address, self.message_queue)			
+				new_conn = Connection(conn, address, self.message_queue)	
 				self.log_message("INFO", f"New client connected: {new_conn.address}")
 
-				client_thread = threading.Thread(target=new_conn.handle, daemon=True).start()
+				threading.Thread(target=new_conn.handle, daemon=True).start()
 
 		except KeyboardInterrupt:
 			self.log_message("WARNING", f"Keyboard interrupt, quitting server")
@@ -57,9 +55,9 @@ class Server:
 			self.close()
 
 
-	# Shuts down the server
+	# Closes down the server
 	def close(self):
-		self.log_message("INFO", f"Shutting down server on {self.host}:{self.port}")
+		self.log_message("INFO", f"Closing down server on {self.host}:{self.port}")
 
 		with self.conn_lock:
 			for connection in self.connections:
@@ -68,7 +66,7 @@ class Server:
 		self.socket.close()
 
 
-	# Loops through queue and processes messages
+	# Polls the queue and processes the messages
 	def process_messages(self):
 		while True:
 			connection, message = self.message_queue.get()
@@ -84,22 +82,18 @@ class Server:
 					self.state.update_player_direction(connection.username, message['direction'])
 
 			elif 'remove_connection' in message:
-				# Remove client
+				# Remove the player from game state and connection pool
 				self.remove_player(message['remove_connection'])	
 
 
-	# Sends a message to all clients
+	# Sends a message to all connected clients
 	def broadcast(self, message):
 		with self.conn_lock:
 			for connection in list(self.connections):
-				try:
-					connection.send(message)
-				except Exception as e:
-					self.log_message("ERROR", traceback.format_exc())
-					self.remove_player(connection)
+				connection.send(message)
 
 
-	# Updates everyone's states and sends out the new state
+	# Updates the game state and sends out the new state
 	def broadcast_loop(self):
 		while True:
 			with self.state_lock:
@@ -110,17 +104,15 @@ class Server:
 			time.sleep(0.075)
 
 
-	# Adds a player to the game by username, add to connection pool
+	# Adds a player to the game and add to connection pool
 	def add_player(self, connection, username):
-		unique_username = username
-
 		with self.state_lock:
 			unique_username = self.state.get_unique_username(username)
 			self.state.add_player(unique_username)
 			connection.username = unique_username
 
 		# Send the unique username back to the client
-		connection.send_username(unique_username)
+		connection.send(unique_username)
 
 		with self.conn_lock:
 			self.connections.append(connection)
@@ -135,7 +127,7 @@ class Server:
 		connection.socket.close()
 
 		with self.conn_lock:
-			if connection in self.connections:				
+			if connection in self.connections:
 				self.connections.remove(connection)			
 				self.log_message("DEBUG", f"List of connections: {[conn.address for conn in self.connections]}")	
 
