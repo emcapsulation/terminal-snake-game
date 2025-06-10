@@ -6,8 +6,9 @@ The singleplayer directory contains the code for a terminal snake game in under 
 The multiplayer directory contains the code for a multiplayer snake game using sockets and threads. 
 
 I made videos about these on my YouTube channel.
-Singleplayer: https://www.youtube.com/watch?v=ado_xHizvMc
-Multiplayer: https://www.youtube.com/watch?v=HkpvvkFWBwM
+
+* Make a Snake Game in Under 50 Lines of Python Code: https://www.youtube.com/watch?v=ado_xHizvMc
+* Code a Multiplayer Snake Game in Python - Sockets and Threads Explained: https://www.youtube.com/watch?v=HkpvvkFWBwM
 
 ## Running the Code
 If you are on Windows, you will need to install curses. This step is not needed for Linux or Mac users.
