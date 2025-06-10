@@ -3,30 +3,33 @@
 ## Description
 The singleplayer directory contains the code for a terminal snake game in under 50 lines of Python. It was written using the curses library. 
 
-I made a video about it on my YouTube channel: https://www.youtube.com/watch?v=ado_xHizvMc
+The multiplayer directory contains the code for a multiplayer snake game using sockets and threads. 
 
-The multi-player directory contains the code for a multiplayer snake game using sockets. 
+I made videos about these on my YouTube channel.
+Singleplayer: https://www.youtube.com/watch?v=ado_xHizvMc
+Multiplayer: https://www.youtube.com/watch?v=HkpvvkFWBwM
 
 ## Running the Code
-### Singleplayer
 If you are on Windows, you will need to install curses. This step is not needed for Linux or Mac users.
 ```
 pip install windows-curses
 ```
-Run the game.
+### Singleplayer
 ```
 cd singleplayer
 python3 snake-game.py
 ```
 ### Multiplayer
-Running the server:
+In one terminal or command prompt, run the server:
 ```
 cd multiplayer/server
 python3 server.py
 ```
-Running the client:
+It will display your machine's local IP address.
+
+Anyone who wants to play the game should run the client:
 ```
 cd multiplayer/client
 python3 client.py
 ```
-Connect to the IP address of the machine running the server.
+Tell them to connect to the IP address of the machine running the server. You can play it by yourself if you want - just run the client in a separate terminal / command prompt.
